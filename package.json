@@ -1,0 +1,19 @@
+{
+  "name": "mehfil",
+  "version": "1.0.0",
+  "description": "mehfil: a self-hosted jam where a pasted link plays for everyone, in sync. Ships with sync-lis, a watch-together browser extension.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "relay": "node relay.js",
+    "test": "node test/run-all.js",
+    "test:e2e": "node test/e2e.js"
+  },
+  "dependencies": {
+    "selfsigned": "^5.5.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "playwright": "^1.62.0"
+  }
+}

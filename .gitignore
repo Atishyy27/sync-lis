@@ -1,0 +1,13 @@
+node_modules/
+
+# the server's self-signed TLS keypair — never leaves this machine
+.cert/
+
+# audio fetched for the queue, and generated test media
+media/
+test/fixture/*.mp4
+test/fixture/*.m4a
+
+# local scratch
+*.log
+.DS_Store
