@@ -76,9 +76,22 @@ async function injectAgent(tabId) {
 // retried rather than being trusted forever.
 const NAV_RETRY_MS = 5000;
 
+const sameUrl = (a, b) => {
+  try {
+    const x = new URL(a), y = new URL(b);
+    return x.origin === y.origin && x.pathname === y.pathname && x.search === y.search;
+  } catch { return false; }
+};
+
 async function followContent(tabId, s) {
   if (!s.content || !s.content.url) return;
   if (s.content.key === s.agentKey) return;  // already watching it
+  // Rejoining a room you never really left should not reload your tab. The
+  // agent has not reported yet at this point, so the URL is what we have.
+  try {
+    const tab = await chrome.tabs.get(tabId);
+    if (tab && tab.url && sameUrl(tab.url, s.content.url)) return;
+  } catch {}
   if (s.navigatingTo === s.content.key && Date.now() - (s.navAt || 0) < NAV_RETRY_MS) return;
   s.navigatingTo = s.content.key;
   s.navAt = Date.now();
@@ -145,6 +158,12 @@ function startSession(tabId, server, name, joinMsg) {
       } else if (msg.type === "syncSaid") {
         s.history.push(msg);
         relayToPorts(s, { type: "note", text: msg.text });
+      } else if (msg.type === "syncSting") {
+        relayToPorts(s, { type: "sting", kind: msg.kind, from: msg.from });
+      } else if (msg.type === "syncBig") {
+        relayToPorts(s, { type: "big", emoji: msg.emoji, from: msg.from });
+      } else if (msg.type === "syncSecret") {
+        relayToPorts(s, { type: "secret", text: msg.text, from: msg.from });
       } else if (msg.type === "syncTyping") {
         if (msg.fromId !== s.meId) relayToPorts(s, { type: "typing", from: msg.from });
       } else if (msg.type === "syncChat") {
@@ -309,6 +328,10 @@ chrome.runtime.onConnect.addListener((port) => {
     hold: (m) => ({ type: "syncHold", holding: m.holding }),
     away: (m) => ({ type: "syncAway", away: m.away }),
     typing: () => ({ type: "syncTyping" }),
+    identity: (m) => ({ type: "syncIdentity", name: m.name, avatar: m.avatar }),
+    sting: (m) => ({ type: "syncSting", kind: m.kind }),
+    big: (m) => ({ type: "syncBig", emoji: m.emoji }),
+    secret: (m) => ({ type: "syncSecret", text: m.text }),
     pos: (m) => ({ type: "syncPos", time: m.time }),
     chat: (m) => ({ type: "syncChat", text: m.text }),
     react: (m) => ({ type: "syncReact", emoji: m.emoji }),

@@ -223,8 +223,8 @@ const videoState = (page) => page.evaluate(() => {
     await check("her page shows who the room is waiting for", await until(() =>
       pageA.evaluate(() => {
         const r = document.getElementById("sync-lis-root");
-        const t = r && r.shadowRoot.querySelector(".toast");
-        return t && t.classList.contains("show") && /waiting for/i.test(t.textContent);
+        const v = r && r.shadowRoot.querySelector(".veil");
+        return v && v.classList.contains("show") && /waiting for/i.test(v.textContent);
       })));
     clearInterval(stall);
 

@@ -6,17 +6,17 @@
 </head>
 <body>
 
-  <header class="head">
+  <header class="deck">
     <span id="rec" class="rec"></span>
     <h1>sync&#8209;lis</h1>
-    <span class="eyebrow" id="roomLine">no tape</span>
+    <span class="counter" id="counter">--:--</span>
   </header>
 
   <!-- not in a room -->
-  <section id="idle" class="pad">
+  <section id="idle" class="view pad">
     <p class="hint">Open what you want to watch in this tab, then start a room and send the link.</p>
     <input id="nameInput" type="text" maxlength="24" placeholder="your name" autocomplete="off" />
-    <div class="label" style="margin-top:10px">pick a face</div>
+    <div class="label mt">pick a face</div>
     <div id="faces" class="faces"></div>
     <button id="createBtn" class="primary">Start a room</button>
     <div class="rule"><span>or join</span></div>
@@ -28,55 +28,82 @@
   </section>
 
   <!-- in a room -->
-  <section id="room" class="hidden">
-    <div class="pad">
-      <div class="label">invite</div>
-      <div class="row">
-        <input id="linkBox" type="text" readonly />
-        <button id="copyBtn">Copy</button>
-      </div>
-    </div>
-
+  <div id="room" class="hidden">
     <div id="statusBar" class="status hidden"><span id="statusText"></span></div>
 
-    <div class="viewfinder">
-      <div class="label">now rolling</div>
-      <div id="nowTitle" class="now">nothing yet</div>
-      <div class="bar"><div id="nowBar"></div></div>
-      <div class="stamp"><span id="stampTime">0:00</span><span id="stampRate"></span></div>
-    </div>
+    <!-- NOW -->
+    <section id="viewNow" class="view">
+      <div class="screen">
+        <div class="label">now rolling</div>
+        <div id="nowTitle" class="now">nothing yet</div>
+        <div class="bar"><div id="nowBar"></div></div>
+        <div class="stamp"><span id="stampTime">0:00</span><span id="stampRate"></span></div>
+      </div>
+      <div class="pad">
+        <div class="label">activity</div>
+        <div id="activity" class="activity"></div>
+      </div>
+    </section>
 
-    <div class="pad">
-      <div class="label">channels</div>
-      <ul id="people" class="people"></ul>
-    </div>
+    <!-- ROOM -->
+    <section id="viewRoom" class="view hidden">
+      <div class="pad">
+        <div class="label">invite</div>
+        <div class="row">
+          <input id="linkBox" type="text" readonly />
+          <button id="copyBtn">Copy</button>
+        </div>
+      </div>
+      <div class="pad">
+        <div class="label">channels</div>
+        <ul id="people" class="people"></ul>
+      </div>
+      <div class="pad">
+        <div class="label">you</div>
+        <div class="row">
+          <input id="meName" type="text" maxlength="24" placeholder="your name" autocomplete="off" />
+          <button id="saveMe">Save</button>
+        </div>
+        <div id="meFaces" class="faces mt"></div>
+      </div>
+      <div class="pad">
+        <div class="label">room</div>
+        <div class="controls">
+          <button id="readyBtn" class="pill">ready</button>
+          <button id="lockBtn" class="pill">lock</button>
+          <button id="voiceBtn" class="pill">voice</button>
+          <button id="muteBtn" class="pill hidden">mute</button>
+          <button id="leaveBtn" class="pill danger">leave</button>
+        </div>
+      </div>
+    </section>
 
-    <div class="log-wrap">
+    <!-- CHAT -->
+    <section id="viewChat" class="view hidden chat-view">
       <div id="log" class="log"></div>
       <div id="typing" class="typing"></div>
-    </div>
+      <div id="tray" class="tray hidden"></div>
+      <div class="composer">
+        <div class="row">
+          <input id="chatInput" type="text" maxlength="500" placeholder="say something" autocomplete="off" />
+          <button id="sendBtn">Send</button>
+        </div>
+        <div class="tools">
+          <button id="emojiBtn" class="tool" title="emoji">☺</button>
+          <button id="gifBtn" class="tool" title="paste an image or gif link">gif</button>
+          <button id="stingBtn" class="tool" title="sounds">♪</button>
+          <button id="bigBtn" class="tool" title="send one huge">big</button>
+          <button id="secretBtn" class="tool" title="secret message">psst</button>
+        </div>
+      </div>
+    </section>
 
-    <div class="pad tight">
-      <div class="reacts">
-        <button data-e="😂">😂</button>
-        <button data-e="❤️">❤️</button>
-        <button data-e="😮">😮</button>
-        <button data-e="🔥">🔥</button>
-        <button data-e="😭">😭</button>
-      </div>
-      <div class="row">
-        <input id="chatInput" type="text" maxlength="500" placeholder="say something" autocomplete="off" />
-        <button id="sendBtn">Send</button>
-      </div>
-      <div class="controls">
-        <button id="voiceBtn" class="pill">🎙 voice</button>
-        <button id="muteBtn" class="pill hidden">mute</button>
-        <button id="readyBtn" class="pill">ready</button>
-        <button id="lockBtn" class="pill">lock</button>
-        <button id="leaveBtn" class="pill danger">leave</button>
-      </div>
-    </div>
-  </section>
+    <nav class="tabs">
+      <button data-v="Now" class="on">now</button>
+      <button data-v="Chat">chat<span id="unread" class="unread hidden"></span></button>
+      <button data-v="Room">room</button>
+    </nav>
+  </div>
 
   <script src="sidepanel.js"></script>
 </body>

@@ -620,6 +620,34 @@ wss.on("connection", (ws) => {
           return syncBroadcastSoon(sr);
         }
         // stepped away from the tab, so silence has an explanation
+        // who you are is changeable after joining: people arrive through a
+        // link before anyone has asked their name
+        case "syncIdentity": {
+          const name = String(msg.name || "").slice(0, 24).trim();
+          const avatar = String(msg.avatar || "").slice(0, 8);
+          const was = me.name;
+          if (name && name !== me.name) me.name = name;
+          if (avatar !== undefined) me.avatar = avatar;
+          if (name && was !== name && was !== "friend") said(sr, `${was} is now ${name}`);
+          return syncBroadcast(sr);
+        }
+        // party pieces: a sound everyone hears, a reaction the size of the
+        // screen, and a message written now but revealed when you choose
+        case "syncSting": {
+          const kind = String(msg.kind || "").slice(0, 16);
+          if (kind) syncSend(sr, { type: "syncSting", kind, from: me.name });
+          return;
+        }
+        case "syncBig": {
+          const emoji = String(msg.emoji || "").slice(0, 8);
+          if (emoji) syncSend(sr, { type: "syncBig", emoji, from: me.name });
+          return;
+        }
+        case "syncSecret": {
+          const text = String(msg.text || "").slice(0, 200).trim();
+          if (text) syncSend(sr, { type: "syncSecret", text, from: me.name });
+          return;
+        }
         case "syncAway": {
           const away = !!msg.away;
           if (away === me.away) return;

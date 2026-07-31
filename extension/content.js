@@ -479,7 +479,10 @@
         url: adapter.url(),
         title: adapter.title(),
         kind: adapter.kind,
-        time: adapter.getTime(),
+        // Always zero. A player's reported position lags a track change by a
+        // second or so, so carrying it over made every next song start where
+        // the last one ended. Position sync catches up on its own.
+        time: 0,
       });
     } catch {}
   }
@@ -553,17 +556,23 @@
     ui.mount();
   }
 
-  // The only thing worth interrupting the video for: the room is waiting.
+  // The only thing worth interrupting the film for: the room is waiting, and
+  // it should be obvious why without looking at the panel.
   function paintStatus() {
     if (!ui || !ui.root || !room) return;
-    const counting = room.countdownAt && room.countdownAt > Date.now();
-    if (counting) {
-      return ui.toast(String(Math.ceil((room.countdownAt - Date.now()) / 1000)), true);
+    if (room.countdownAt && room.countdownAt > Date.now()) {
+      return ui.countdown(Math.ceil((room.countdownAt - Date.now()) / 1000));
     }
-    const waiting = (room.members || [])
-      .filter((m) => m.holding || m.arrived === false)
-      .map((m) => (m.id === room.meId ? "you" : m.name));
-    ui.toast(waiting.length ? `waiting for ${waiting.join(" and ")}` : null);
+    const waiting = (room.members || []).filter((m) => m.holding || m.arrived === false);
+    if (!waiting.length) return ui.hold(null, null);
+
+    const names = waiting.map((m) => (m.id === room.meId ? "you" : m.name));
+    const why = waiting.some((m) => m.arrived === false)
+      ? "still getting there"
+      : adapter.isAd() && waiting.some((m) => m.id === room.meId)
+        ? "an ad is playing"
+        : "buffering";
+    ui.hold("hold on", `waiting for ${names.join(" and ")}`, why);
   }
 
   function connect() {
@@ -579,6 +588,12 @@
         reconcile();
       } else if (msg.type === "react") {
         if (ui) ui.float(msg.emoji);
+      } else if (msg.type === "big") {
+        if (ui) ui.big(msg.emoji);
+      } else if (msg.type === "secret") {
+        if (ui) ui.secret(msg.text);
+      } else if (msg.type === "sting") {
+        if (ui) ui.sting(msg.kind);
       } else if (msg.type === "ended") {
         state = null;
         content = null;

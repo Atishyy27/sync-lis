@@ -52,7 +52,7 @@ process.on("exit", () => {
   him.send({ type: "syncHold", holding: true });
   await sleep(300);
   check("his buffering pauses the room for everyone", her.room.state.paused === true);
-  check("she can see he is the one buffering", her.room.members.find((m) => m.name === "him").holding === true);
+  check("she can see he is the one buffering", her.room.members.find((m) => m.id === him.joined.meId).holding === true);
 
   const heldTime = her.room.state.time;
   await sleep(1200);
@@ -75,7 +75,7 @@ process.on("exit", () => {
   // position reports feed the drift meter
   him.send({ type: "syncPos", time: 42.4 });
   await sleep(2400);
-  check("positions reach the other side", her.room.members.find((m) => m.name === "him").pos === 42.4);
+  check("positions reach the other side", her.room.members.find((m) => m.id === him.joined.meId).pos === 42.4);
 
   // chat + reactions
   him.send({ type: "syncChat", text: "this scene is unreal" });
@@ -116,6 +116,24 @@ process.on("exit", () => {
   check("play is scheduled, not immediate", him.room.state.paused === false && him.room.state.at === him.room.countdownAt);
   check("ready flags reset after firing", him.room.members.every((m) => !m.ready));
 
+  // identity is changeable after joining: link-joiners arrive unnamed
+  him.send({ type: "syncIdentity", name: "Aditi", avatar: "🍿" });
+  await sleep(300);
+  const named = her.room.members.find((m) => m.id === him.joined.meId);
+  check("a joiner can name themselves later", named && named.name === "Aditi");
+  check("and pick a face", named && named.avatar === "🍿");
+
+  // party pieces reach the room
+  him.send({ type: "syncSting", kind: "drumroll" });
+  await sleep(250);
+  check("a sting reaches the room", her.got("syncSting").some((m) => m.kind === "drumroll"));
+  him.send({ type: "syncBig", emoji: "🔥" });
+  await sleep(250);
+  check("a big reaction reaches the room", her.got("syncBig").some((m) => m.emoji === "🔥"));
+  him.send({ type: "syncSecret", text: "dekh peeche" });
+  await sleep(250);
+  check("a secret reaches the room", her.got("syncSecret").some((m) => m.text === "dekh peeche"));
+
   // speed is shared: one person changing it changes it for the room
   her.send({ type: "syncCmd", action: "rate", rate: 1.5, time: 10 });
   await sleep(300);
@@ -134,27 +152,27 @@ process.on("exit", () => {
   // away presence
   him.send({ type: "syncAway", away: true });
   await sleep(300);
-  check("away shows to the other side", her.room.members.find((m) => m.name === "him").away === true);
+  check("away shows to the other side", her.room.members.find((m) => m.id === him.joined.meId).away === true);
   him.send({ type: "syncAway", away: false });
   await sleep(300);
-  check("coming back clears away", her.room.members.find((m) => m.name === "him").away === false);
+  check("coming back clears away", her.room.members.find((m) => m.id === him.joined.meId).away === false);
 
   // typing indicator
   him.send({ type: "syncTyping" });
   await sleep(300);
-  check("typing reaches the other side", her.got("syncTyping").some((m) => m.from === "him"));
+  check("typing reaches the other side", her.got("syncTyping").some((m) => m.fromId === him.joined.meId));
 
   // voice: the server carries only the handshake, never audio
   him.send({ type: "syncVoice", on: true });
   await sleep(300);
-  check("voice flag is visible to the room", her.room.members.find((m) => m.name === "him").voice === true);
+  check("voice flag is visible to the room", her.room.members.find((m) => m.id === him.joined.meId).voice === true);
   him.send({ type: "syncSignal", to: her.joined.meId, data: { sdp: { type: "offer", sdp: "x" } } });
   await sleep(300);
   const sig = her.got("syncSignal")[0];
   check("handshake is relayed with the sender's id", sig && sig.from === him.joined.meId && sig.data.sdp.type === "offer");
   him.send({ type: "syncVoice", on: false });
   await sleep(300);
-  check("leaving voice clears the flag", her.room.members.find((m) => m.name === "him").voice === false);
+  check("leaving voice clears the flag", her.room.members.find((m) => m.id === him.joined.meId).voice === false);
 
   // host leaving hands over and unlocks
   her.send({ type: "syncHostLock", locked: true });
@@ -207,4 +225,6 @@ process.on("exit", () => {
   [a, invited].forEach((c) => c.ws.close());
   process.exit(process.exitCode || 0);
 })();
+
+
 
