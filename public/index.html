@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mehfil</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%23ffb454'/></svg>" />
+</head>
+<body>
+
+  <!-- join gate: also the user gesture that unlocks audio autoplay -->
+  <div id="joinScreen" class="screen center">
+    <div class="join-card">
+      <div class="wordmark">mehfil</div>
+      <p class="tagline">The office jukebox. Paste a link — it plays for everyone, in sync.</p>
+      <form id="joinForm">
+        <input id="nameInput" type="text" maxlength="24" placeholder="Your name" autocomplete="off" />
+        <div id="faces" class="faces"></div>
+        <button type="submit">Join the jam</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="room" class="screen hidden">
+    <header>
+      <span class="wordmark small">mehfil</span>
+      <span id="memberCount" class="count"></span>
+    </header>
+
+    <section id="nowPlaying" class="hero">
+      <div id="npEmpty">
+        <div class="label">Nothing playing</div>
+        <p class="empty-hint">Paste a YouTube, Spotify, or SoundCloud link below — or drop an audio file anywhere on this page.</p>
+      </div>
+      <div id="npBody" class="hidden">
+        <img id="npThumb" alt="" />
+        <div class="np-info">
+          <div class="hero-top">
+            <span class="eq" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span class="label live-label">Now playing</span>
+          </div>
+          <div id="npTitle" class="np-title"></div>
+          <div id="npArtist" class="np-artist"></div>
+          <div id="npOwner" class="np-owner"></div>
+          <div id="progressWrap" class="progress" title="Seek for everyone"><div id="progressBar"></div></div>
+          <div class="np-times"><span id="tCur">0:00</span><span id="tDur">0:00</span></div>
+          <div class="np-controls">
+            <button id="playPauseBtn" class="ghost tiny">Pause</button>
+            <button id="skipBtn" class="ghost tiny">Skip</button>
+          </div>
+        </div>
+      </div>
+      <audio id="jamAudio"></audio>
+      <button id="unmuteBtn" class="hidden">Tap to listen</button>
+    </section>
+
+    <form id="addForm">
+      <input id="linkInput" type="text" placeholder="Paste a link — YouTube, Spotify, SoundCloud…" autocomplete="off" />
+      <button type="submit">Add</button>
+    </form>
+
+    <section class="card">
+      <div class="label">Up next</div>
+      <ul id="queueList" class="queue"></ul>
+      <p id="queueEmpty" class="empty">Queue's empty.</p>
+    </section>
+
+    <section class="card">
+      <div class="label">Listening</div>
+      <ul id="memberList" class="members"></ul>
+    </section>
+
+    <section class="card chat-card">
+      <div class="label">Room</div>
+      <div id="chatLog" class="chat-log"></div>
+      <div class="reacts">
+        <button type="button" data-e="😂">😂</button>
+        <button type="button" data-e="❤️">❤️</button>
+        <button type="button" data-e="🔥">🔥</button>
+        <button type="button" data-e="🕺">🕺</button>
+        <button type="button" data-e="😭">😭</button>
+      </div>
+      <form id="chatForm">
+        <input id="chatInput" type="text" maxlength="500" placeholder="Say something" autocomplete="off" />
+        <button type="submit">Send</button>
+      </form>
+    </section>
+
+    <section class="access">
+      <div class="access-row">
+        <span class="label">Who can join</span>
+        <button id="accessBtn" class="ghost tiny">…</button>
+      </div>
+      <p id="accessHint" class="access-hint"></p>
+      <div id="shareRow" class="share-row hidden">
+        <input id="shareLink" type="text" readonly />
+        <button id="shareCopy" class="ghost tiny">Copy</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="dropOverlay" class="hidden"><span>Drop to queue</span></div>
+  <div id="toast" class="hidden"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
