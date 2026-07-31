@@ -1,16 +1,21 @@
-* { margin: 0; padding: 0; box-sizing: border-box; }
+﻿* { margin: 0; padding: 0; box-sizing: border-box; }
 
+/* Same system as the extension: a neutral ground with a faint cool bias, one
+ * accent spent sparingly, and state colours kept separate from it. The jam is
+ * the louder of the two products, so it gets more air and larger type. */
 :root {
-  --bg: #141210;        /* warm near-black, amber-biased */
-  --surface: #1c1916;
-  --field: #242019;
-  --text: #ece7df;
-  --muted: #9a9184;
-  --accent: #ffb454;    /* amp glow — spent on the live state + primary action */
-  --accent-ink: #241300;
-  --danger: #e2614f;
-  --border: #2a2620;
-  --radius: 14px;
+  --bg: #08090b;
+  --surface: #0e1013;
+  --field: #14171c;
+  --text: #e9ebee;
+  --muted: #878d96;
+  --faint: #4e545c;
+  --accent: #8b8cff;    /* iris, used once per view */
+  --accent-ink: #08090b;
+  --live: #63c89b;
+  --danger: #d9a143;
+  --border: #1a1d22;
+  --radius: 4px;
 }
 
 html { color-scheme: dark; }
@@ -18,7 +23,7 @@ html { color-scheme: dark; }
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
 }
@@ -28,9 +33,9 @@ body {
 .center { display: flex; min-height: 100vh; align-items: center; justify-content: center; }
 
 /* type roles */
-.wordmark { font-size: 40px; font-weight: 750; letter-spacing: -1.2px; }
+.wordmark { font-size: 40px; font-weight: 300; letter-spacing: -1.4px; }
 .wordmark.small { font-size: 20px; letter-spacing: -0.5px; }
-.wordmark::after { content: "."; color: var(--accent); }
+.wordmark::after { content: ''; }
 .label {
   font-size: 11px;
   font-weight: 600;
@@ -48,7 +53,7 @@ body {
 /* controls */
 input, button {
   font: inherit;
-  border-radius: 10px;
+  border-radius: 4px;
   border: 1px solid var(--border);
   background: var(--field);
   color: var(--text);
@@ -60,7 +65,7 @@ button {
   cursor: pointer;
   background: var(--accent);
   color: var(--accent-ink);
-  font-weight: 650;
+  font-weight: 600;
   border: none;
   transition: filter 0.12s;
 }
@@ -79,7 +84,7 @@ button.tiny { padding: 4px 10px; border-radius: 8px; font-size: 13px; }
 header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 20px; }
 .count { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
 
-/* hero — now playing */
+/* hero â€” now playing */
 .hero {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -88,7 +93,7 @@ header { display: flex; align-items: baseline; justify-content: space-between; m
   margin-bottom: 14px;
   transition: border-color 0.3s;
 }
-.hero.live { border-color: rgba(255, 180, 84, 0.45); }
+.hero.live { border-color: color-mix(in srgb, var(--live) 45%, transparent); }
 #npEmpty { text-align: center; padding: 14px 0; }
 .empty-hint { color: var(--muted); font-size: 14px; line-height: 1.55; margin-top: 10px; }
 
@@ -96,16 +101,16 @@ header { display: flex; align-items: baseline; justify-content: space-between; m
 #npThumb {
   width: 108px; height: 108px;
   object-fit: cover;
-  border-radius: 10px;
+  border-radius: 4px;
   border: 1px solid var(--border);
   flex-shrink: 0;
   background: var(--field);
 }
 .np-info { flex: 1; min-width: 0; }
 .hero-top { display: flex; align-items: center; gap: 8px; }
-.live-label { color: var(--accent); }
+.live-label { color: var(--live); }
 .np-title {
-  font-size: 19px; font-weight: 720; letter-spacing: -0.3px;
+  font-size: 20px; font-weight: 500; letter-spacing: -0.4px;
   margin-top: 6px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
@@ -131,7 +136,7 @@ header { display: flex; align-items: baseline; justify-content: space-between; m
 
 /* equalizer */
 .eq { display: inline-flex; align-items: flex-end; gap: 2.5px; height: 12px; }
-.eq i { width: 3px; background: var(--accent); border-radius: 2px; animation: eq 1s ease-in-out infinite; }
+.eq i { width: 3px; background: var(--live); border-radius: 2px; animation: eq 1s ease-in-out infinite; }
 .eq i:nth-child(1) { animation-delay: 0s; }
 .eq i:nth-child(2) { animation-delay: 0.25s; }
 .eq i:nth-child(3) { animation-delay: 0.5s; }
@@ -191,14 +196,14 @@ header { display: flex; align-items: baseline; justify-content: space-between; m
 .faces { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 4px; }
 .face-pick {
   background: var(--field); border: 1px solid var(--border); color: var(--text);
-  border-radius: 9px; padding: 5px 8px; font-size: 18px; line-height: 1; cursor: pointer;
+  border-radius: 4px; padding: 5px 8px; font-size: 18px; line-height: 1; cursor: pointer;
   font-weight: 400;
 }
-.face-pick.on { border-color: var(--accent); background: rgba(255, 180, 84, 0.14); }
+.face-pick.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); }
 .face {
   width: 26px; height: 26px; flex: none;
   display: grid; place-items: center;
-  border-radius: 8px; font-size: 14px; color: #fff; font-weight: 700;
+  border-radius: 50%; font-size: 13px; color: #fff; font-weight: 600;
 }
 
 /* members */
@@ -217,7 +222,7 @@ header { display: flex; align-items: baseline; justify-content: space-between; m
   display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px;
 }
 .cmsg { font-size: 14.5px; line-height: 1.45; word-wrap: break-word; }
-.cmsg b { color: var(--accent); font-weight: 650; }
+.cmsg b { color: var(--accent); font-weight: 600; }
 .csys { color: var(--muted); font-size: 12.5px; font-style: italic; }
 #chatForm { display: flex; gap: 8px; }
 #chatForm input { flex: 1; min-width: 0; }
@@ -241,7 +246,7 @@ header { display: flex; align-items: baseline; justify-content: space-between; m
 /* phone: this is the point of the website, so it has to feel right here */
 @media (max-width: 560px) {
   .screen { padding: 16px 12px 40px; }
-  .wordmark { font-size: 34px; }
+  .wordmark { font-size: 40px; font-weight: 300; letter-spacing: -1.4px; }
   #npBody { flex-direction: column; text-align: center; gap: 12px; }
   #npThumb { width: 132px; height: 132px; }
   .np-title { font-size: 17px; white-space: normal; }
@@ -295,3 +300,5 @@ header { display: flex; align-items: baseline; justify-content: space-between; m
 }
 
 .disconnected { filter: grayscale(0.85); }
+
+

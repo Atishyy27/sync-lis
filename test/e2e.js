@@ -202,6 +202,12 @@ const videoState = (page) => page.evaluate(() => {
     await check("her seek moves him to the same place", seeked);
 
     // --- transport: pause ---
+    // Settle first. A seek can leave a buffer hold in flight, and pausing an
+    // already-paused player emits no event, so the assertion would race.
+    await until(async () => {
+      const [x, y] = [await videoState(pageA), await videoState(pageB)];
+      return x && y && !x.paused && !y.paused;
+    }, 15000, 400);
     await pageA.evaluate(() => document.querySelector("video").pause());
     await check("her pause stops his video", await until(async () => {
       const b = await videoState(pageB);

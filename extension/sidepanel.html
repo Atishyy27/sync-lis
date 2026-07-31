@@ -1,109 +1,94 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <link rel="stylesheet" href="sidepanel.css" />
 </head>
 <body>
 
-  <header class="deck">
-    <span id="rec" class="rec"></span>
-    <h1>sync&#8209;lis</h1>
-    <span class="counter" id="counter">--:--</span>
-  </header>
-
-  <!-- not in a room -->
-  <section id="idle" class="view pad">
-    <p class="hint">Open what you want to watch in this tab, then start a room and send the link.</p>
+  <!-- before a room exists -->
+  <section id="door" class="door">
+    <div class="mark">sync&#8209;<b>lis</b></div>
+    <p>Open what you want to watch in this tab, then start a room and send the link. Whatever you play, they play.</p>
     <input id="nameInput" type="text" maxlength="24" placeholder="your name" autocomplete="off" />
-    <div class="label mt">pick a face</div>
-    <div id="faces" class="faces"></div>
-    <button id="createBtn" class="primary">Start a room</button>
-    <div class="rule"><span>or join</span></div>
-    <div class="row">
-      <input id="codeInput" type="text" placeholder="paste room link or code" autocomplete="off" />
-      <button id="joinBtn">Join</button>
-    </div>
-    <p id="idleErr" class="err hidden"></p>
+    <button id="createBtn" class="go">Start a room</button>
+    <div class="or"><span>or join</span></div>
+    <input id="codeInput" type="text" placeholder="paste the room link" autocomplete="off" />
+    <button id="joinBtn" class="chip" style="text-align:center">Join</button>
+    <p id="doorErr" class="err hidden"></p>
   </section>
 
-  <!-- in a room -->
-  <div id="room" class="hidden">
-    <div id="statusBar" class="status hidden"><span id="statusText"></span></div>
-
-    <!-- NOW -->
-    <section id="viewNow" class="view">
-      <div class="screen">
-        <div class="label">now rolling</div>
-        <div id="nowTitle" class="now">nothing yet</div>
-        <div class="bar"><div id="nowBar"></div></div>
-        <div class="stamp"><span id="stampTime">0:00</span><span id="stampRate"></span></div>
-      </div>
-      <div class="pad">
-        <div class="label">activity</div>
-        <div id="activity" class="activity"></div>
+  <!-- the room -->
+  <main id="live" class="hidden">
+    <section class="state">
+      <div id="stateLine" class="state-line">nothing playing</div>
+      <div id="stateWhy" class="state-why"></div>
+      <div id="track" class="track"></div>
+      <div class="track-ends">
+        <span id="tNow">0:00</span>
+        <span id="tRate"></span>
       </div>
     </section>
 
-    <!-- ROOM -->
-    <section id="viewRoom" class="view hidden">
-      <div class="pad">
-        <div class="label">invite</div>
-        <div class="row">
+    <section class="playing">
+      <div class="eyebrow">playing</div>
+      <div id="title" class="title empty">nothing yet</div>
+    </section>
+
+    <section id="people" class="people"></section>
+
+    <div id="stream" class="stream"></div>
+    <div id="typing" class="typing"></div>
+
+    <div class="composer">
+      <div class="field">
+        <input id="msg" type="text" maxlength="500" placeholder="say something" autocomplete="off" />
+        <button id="more" title="more">+</button>
+        <button id="send" title="send">↵</button>
+      </div>
+      <div id="drawer" class="drawer hidden"></div>
+    </div>
+  </main>
+
+  <!-- room settings, one level down -->
+  <section id="sheet" class="sheet hidden">
+    <div class="sheet-head">
+      <h2>Room</h2>
+      <button id="sheetClose" class="chip">Close</button>
+    </div>
+    <div class="sheet-body">
+      <div class="block">
+        <div class="eyebrow">invite</div>
+        <div class="copyfield">
           <input id="linkBox" type="text" readonly />
-          <button id="copyBtn">Copy</button>
+          <button id="copyBtn" class="chip">Copy</button>
         </div>
       </div>
-      <div class="pad">
-        <div class="label">channels</div>
-        <ul id="people" class="people"></ul>
-      </div>
-      <div class="pad">
-        <div class="label">you</div>
-        <div class="row">
-          <input id="meName" type="text" maxlength="24" placeholder="your name" autocomplete="off" />
-          <button id="saveMe">Save</button>
-        </div>
-        <div id="meFaces" class="faces mt"></div>
-      </div>
-      <div class="pad">
-        <div class="label">room</div>
-        <div class="controls">
-          <button id="readyBtn" class="pill">ready</button>
-          <button id="lockBtn" class="pill">lock</button>
-          <button id="voiceBtn" class="pill">voice</button>
-          <button id="muteBtn" class="pill hidden">mute</button>
-          <button id="leaveBtn" class="pill danger">leave</button>
-        </div>
-      </div>
-    </section>
 
-    <!-- CHAT -->
-    <section id="viewChat" class="view hidden chat-view">
-      <div id="log" class="log"></div>
-      <div id="typing" class="typing"></div>
-      <div id="tray" class="tray hidden"></div>
-      <div class="composer">
-        <div class="row">
-          <input id="chatInput" type="text" maxlength="500" placeholder="say something" autocomplete="off" />
-          <button id="sendBtn">Send</button>
+      <div class="block">
+        <div class="eyebrow">you</div>
+        <div class="copyfield">
+          <input id="meName" type="text" maxlength="24" placeholder="your name" autocomplete="off" style="color:var(--text);font-family:var(--sans);font-size:12px" />
+          <button id="saveMe" class="chip">Save</button>
         </div>
-        <div class="tools">
-          <button id="emojiBtn" class="tool" title="emoji">☺</button>
-          <button id="gifBtn" class="tool" title="paste an image or gif link">gif</button>
-          <button id="stingBtn" class="tool" title="sounds">♪</button>
-          <button id="bigBtn" class="tool" title="send one huge">big</button>
-          <button id="secretBtn" class="tool" title="secret message">psst</button>
+        <div id="faces" class="faces"></div>
+      </div>
+
+      <div class="block">
+        <div class="eyebrow">controls</div>
+        <div class="drawer-row">
+          <button id="readyBtn" class="chip">Ready</button>
+          <button id="lockBtn" class="chip">Lock controls</button>
+          <button id="voiceBtn" class="chip">Voice</button>
+          <button id="muteBtn" class="chip hidden">Mute</button>
         </div>
       </div>
-    </section>
 
-    <nav class="tabs">
-      <button data-v="Now" class="on">now</button>
-      <button data-v="Chat">chat<span id="unread" class="unread hidden"></span></button>
-      <button data-v="Room">room</button>
-    </nav>
-  </div>
+      <div class="block">
+        <button id="leaveBtn" class="chip warn">Leave room</button>
+      </div>
+    </div>
+  </section>
 
   <script src="sidepanel.js"></script>
 </body>

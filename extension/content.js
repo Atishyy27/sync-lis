@@ -564,15 +564,15 @@
       return ui.countdown(Math.ceil((room.countdownAt - Date.now()) / 1000));
     }
     const waiting = (room.members || []).filter((m) => m.holding || m.arrived === false);
-    if (!waiting.length) return ui.hold(null, null);
+    if (!waiting.length) return ui.hold(null, null, null);
 
     const names = waiting.map((m) => (m.id === room.meId ? "you" : m.name));
     const why = waiting.some((m) => m.arrived === false)
       ? "still getting there"
       : adapter.isAd() && waiting.some((m) => m.id === room.meId)
-        ? "an ad is playing"
-        : "buffering";
-    ui.hold("hold on", `waiting for ${names.join(" and ")}`, why);
+        ? "an ad is playing on your side"
+        : "their connection is catching up";
+    ui.hold("hold on", "waiting for", names.join(" and "), why);
   }
 
   function connect() {

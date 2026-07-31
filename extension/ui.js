@@ -11,36 +11,39 @@
 :host { all: initial; }
 .wrap {
   position: fixed; inset: 0; pointer-events: none; z-index: 2147483647;
-  font-family: "JetBrains Mono","Fira Code",ui-monospace,Consolas,monospace;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
-/* the room is waiting: dim the film, say who for, get out of the way */
+/* the room is waiting: dim the film just enough, say it plainly, leave */
 .veil {
   position: absolute; inset: 0;
-  background: rgba(4, 3, 8, 0.55);
-  opacity: 0; transition: opacity .25s;
+  background: rgba(8, 9, 11, 0.62);
+  backdrop-filter: blur(1.5px);
+  opacity: 0; transition: opacity .28s ease;
   display: grid; place-items: center;
 }
 .veil.show { opacity: 1; }
 .card {
-  background: rgba(8, 7, 12, .93);
-  border: 1px solid rgba(255, 61, 129, .55);
-  border-left: 5px solid #ff3d81;
-  padding: 22px 30px;
-  min-width: 260px; max-width: 70vw;
-  box-shadow: 0 20px 70px rgba(0,0,0,.6);
-  transform: translateY(8px) scale(.98);
-  transition: transform .25s;
+  text-align: center;
+  padding: 0 24px;
+  transform: translateY(6px);
+  transition: transform .28s cubic-bezier(.22,1,.36,1);
 }
 .veil.show .card { transform: none; }
 .kicker {
-  font-size: 11px; letter-spacing: 3px; text-transform: uppercase;
-  color: #ff3d81; margin-bottom: 8px;
+  font-size: 10.5px; letter-spacing: 2.2px; text-transform: uppercase;
+  color: #878d96; margin-bottom: 12px;
 }
-.line { font-size: 22px; color: #fff; line-height: 1.35; letter-spacing: .3px; }
-.sub { font-size: 12px; color: #8b83a3; margin-top: 8px; letter-spacing: .5px; }
-.count { font-size: 92px; font-weight: 700; color: #37e2ff; line-height: 1;
-  text-shadow: -3px 0 #ff3d81, 3px 0 #37e2ff; }
+.line {
+  font-size: 34px; font-weight: 300; letter-spacing: -0.8px;
+  color: #e9ebee; line-height: 1.2; max-width: 16ch; margin: 0 auto;
+}
+.line em { font-style: normal; color: #8b8cff; }
+.sub { font-size: 13px; color: #878d96; margin-top: 14px; }
+.count {
+  font-size: 108px; font-weight: 200; color: #e9ebee; line-height: 1;
+  font-variant-numeric: tabular-nums; letter-spacing: -4px;
+}
 
 /* reactions */
 .float { position: absolute; font-size: 40px; animation: rise 2.2s ease-out forwards; }
@@ -66,10 +69,11 @@
   animation: fadeInOut 5s ease-out forwards;
 }
 .secret div {
-  background: rgba(8,7,12,.94); border: 2px solid #ffe14d;
-  color: #ffe14d; padding: 26px 34px; max-width: 70vw;
-  font-size: 26px; line-height: 1.4; text-align: center;
-  box-shadow: 0 0 60px rgba(255,225,77,.28);
+  background: rgba(8,9,11,.95); border: 1px solid #8b8cff;
+  color: #e9ebee; padding: 28px 36px; max-width: 60vw;
+  font-size: 26px; font-weight: 300; line-height: 1.4; text-align: center;
+  letter-spacing: -0.3px;
+  box-shadow: 0 24px 80px rgba(0,0,0,.55);
 }
 @keyframes fadeInOut {
   0% { opacity: 0; transform: scale(.7) rotate(-2deg); }
@@ -110,24 +114,24 @@
     },
 
     // kicker/line/sub, or null to clear
-    hold(kicker, line, sub) {
+    // `who` is emphasised inside the sentence, the way the panel does it
+    hold(kicker, lead, who, sub) {
       if (!this.root) return;
-      const show = !!line;
+      const show = !!lead;
       this.veil.classList.toggle("show", show);
       if (!show) return;
+      const esc = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
       this.body.innerHTML =
-        `<div class="kicker"></div><div class="line"></div>` +
-        (sub ? `<div class="sub"></div>` : "");
-      this.body.querySelector(".kicker").textContent = kicker;
-      this.body.querySelector(".line").textContent = line;
-      if (sub) this.body.querySelector(".sub").textContent = sub;
+        `<div class="kicker">${esc(kicker)}</div>` +
+        `<div class="line">${esc(lead)} <em>${esc(who)}</em></div>` +
+        (sub ? `<div class="sub">${esc(sub)}</div>` : "");
     },
 
     countdown(n) {
       if (!this.root) return;
       this.veil.classList.add("show");
-      this.body.innerHTML = `<div class="kicker">starting together</div><div class="count"></div>`;
-      this.body.querySelector(".count").textContent = String(n);
+      this.body.innerHTML =
+        `<div class="kicker">starting together</div><div class="count">${n}</div>`;
     },
 
     float(emoji) {
