@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>sync-lis microphone</title>
+  <style>
+    body { background:#141210; color:#ece7df; font-family:"Segoe UI",system-ui,sans-serif;
+           min-height:100vh; display:flex; align-items:center; justify-content:center; margin:0 }
+    .c { max-width:360px; padding:24px; text-align:center }
+    h1 { font-size:26px; font-weight:750; letter-spacing:-.7px; margin:0 }
+    h1::after { content:"."; color:#ffb454 }
+    p { color:#9a9184; line-height:1.55; margin:12px 0 }
+    .ok { color:#ffb454; font-weight:650 }
+    button { font:inherit; background:#ffb454; color:#241300; border:none; border-radius:9px;
+             padding:10px 16px; font-weight:650; cursor:pointer; margin-top:8px }
+  </style>
+</head>
+<body>
+  <div class="c">
+    <h1>sync-lis</h1>
+    <p id="msg">Allow the microphone so you can talk while you watch. Chrome will ask once, for the extension, not for the website you're on.</p>
+    <button id="ask">Allow microphone</button>
+  </div>
+  <script src="mic.js"></script>
+</body>
+</html>

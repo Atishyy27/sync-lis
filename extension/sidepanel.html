@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" href="sidepanel.css" />
+</head>
+<body>
+
+  <header class="head">
+    <span id="rec" class="rec"></span>
+    <h1>sync&#8209;lis</h1>
+    <span class="eyebrow" id="roomLine">no tape</span>
+  </header>
+
+  <!-- not in a room -->
+  <section id="idle" class="pad">
+    <p class="hint">Open what you want to watch in this tab, then start a room and send the link.</p>
+    <input id="nameInput" type="text" maxlength="24" placeholder="your name" autocomplete="off" />
+    <div class="label" style="margin-top:10px">pick a face</div>
+    <div id="faces" class="faces"></div>
+    <button id="createBtn" class="primary">Start a room</button>
+    <div class="rule"><span>or join</span></div>
+    <div class="row">
+      <input id="codeInput" type="text" placeholder="paste room link or code" autocomplete="off" />
+      <button id="joinBtn">Join</button>
+    </div>
+    <p id="idleErr" class="err hidden"></p>
+  </section>
+
+  <!-- in a room -->
+  <section id="room" class="hidden">
+    <div class="pad">
+      <div class="label">invite</div>
+      <div class="row">
+        <input id="linkBox" type="text" readonly />
+        <button id="copyBtn">Copy</button>
+      </div>
+    </div>
+
+    <div id="statusBar" class="status hidden"><span id="statusText"></span></div>
+
+    <div class="viewfinder">
+      <div class="label">now rolling</div>
+      <div id="nowTitle" class="now">nothing yet</div>
+      <div class="bar"><div id="nowBar"></div></div>
+      <div class="stamp"><span id="stampTime">0:00</span><span id="stampRate"></span></div>
+    </div>
+
+    <div class="pad">
+      <div class="label">channels</div>
+      <ul id="people" class="people"></ul>
+    </div>
+
+    <div class="log-wrap">
+      <div id="log" class="log"></div>
+      <div id="typing" class="typing"></div>
+    </div>
+
+    <div class="pad tight">
+      <div class="reacts">
+        <button data-e="😂">😂</button>
+        <button data-e="❤️">❤️</button>
+        <button data-e="😮">😮</button>
+        <button data-e="🔥">🔥</button>
+        <button data-e="😭">😭</button>
+      </div>
+      <div class="row">
+        <input id="chatInput" type="text" maxlength="500" placeholder="say something" autocomplete="off" />
+        <button id="sendBtn">Send</button>
+      </div>
+      <div class="controls">
+        <button id="voiceBtn" class="pill">🎙 voice</button>
+        <button id="muteBtn" class="pill hidden">mute</button>
+        <button id="readyBtn" class="pill">ready</button>
+        <button id="lockBtn" class="pill">lock</button>
+        <button id="leaveBtn" class="pill danger">leave</button>
+      </div>
+    </div>
+  </section>
+
+  <script src="sidepanel.js"></script>
+</body>
+</html>

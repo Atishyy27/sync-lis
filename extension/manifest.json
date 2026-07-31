@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "sync-lis",
+  "version": "1.0.0",
+  "description": "Watch and listen together, anywhere. Share one room link — what they play, you play, at the same timestamp. YouTube, Spotify, Netflix and more.",
+  "permissions": ["tabs", "scripting", "storage", "offscreen", "sidePanel"],
+  "side_panel": { "default_path": "sidepanel.html" },
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "sw.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*/r/*"],
+      "js": ["joinlink.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": { "default_title": "sync-lis" }
+}
