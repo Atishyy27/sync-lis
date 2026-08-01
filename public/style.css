@@ -78,6 +78,7 @@ button.ghost {
   font-weight: 500;
 }
 button.ghost:hover { color: var(--text); border-color: var(--muted); filter: none; }
+button.ghost.copied { color: #3fbf6b; border-color: #3fbf6b; background: rgba(63,191,107,.12); }
 button.tiny { padding: 4px 10px; border-radius: 8px; font-size: 13px; }
 
 /* header */

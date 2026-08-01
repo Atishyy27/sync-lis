@@ -429,5 +429,12 @@ $("accessBtn").addEventListener("click", () => {
 });
 
 $("shareCopy").addEventListener("click", () => {
-  navigator.clipboard.writeText($("shareLink").value).then(() => toast("Share link copied"));
+  navigator.clipboard.writeText($("shareLink").value).then(() => {
+    toast("Share link copied");
+    const btn = $("shareCopy");
+    const was = btn.textContent;
+    btn.textContent = "Copied";
+    btn.classList.add("copied");
+    setTimeout(() => { btn.textContent = was; btn.classList.remove("copied"); }, 1400);
+  });
 });

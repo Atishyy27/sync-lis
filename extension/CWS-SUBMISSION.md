@@ -35,6 +35,11 @@ into `manifest.json` — the manifest only needs the (already-correct)
 > Manifest V3 service worker cannot hold directly. Microphone access is
 > requested only when the user explicitly turns voice on.
 
+**`audioCapture`**
+> Required to call getUserMedia() for the voice-chat microphone. Voice is
+> opt-in per session; nothing is captured until the user turns it on, and
+> audio goes peer-to-peer (WebRTC), never through any server we operate.
+
 ## Data usage disclosure (the checkbox grid)
 
 - **Website content** — Yes (page URL/title of the tab in an active room,

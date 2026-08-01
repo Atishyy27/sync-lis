@@ -202,6 +202,7 @@
 .drow { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px; }
 .dchip { padding: 5px 8px; font-size: 10px; background: none; border: 1px solid #2a2620; border-radius: 3px; color: #9a9184; cursor: pointer; }
 .dchip:hover { color: #ece7df; border-color: #6b6357; }
+.dchip.copied { color: #3fbf6b; border-color: #3fbf6b; background: rgba(63,191,107,.12); }
 .dgrid { display: flex; flex-wrap: wrap; gap: 2px; }
 .dgrid button { padding: 3px 5px; font-size: 15px; line-height: 1; background: none; border: none; border-radius: 3px; cursor: pointer; }
 .dgrid button:hover { background: #221e1a; }
@@ -577,7 +578,8 @@ button:focus-visible, .jamrow input:focus-visible, .dmini input:focus-visible, .
         navigator.clipboard.writeText(this.sheet.querySelector("#slLink").value).then(() => {
           const was = btn.textContent;
           btn.textContent = "Copied";
-          setTimeout(() => { btn.textContent = was; }, 1400);
+          btn.classList.add("copied");
+          setTimeout(() => { btn.textContent = was; btn.classList.remove("copied"); }, 1400);
         });
       };
       this.sheet.querySelector("#slSaveMe").onclick = () => {

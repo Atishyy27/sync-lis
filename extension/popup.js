@@ -54,6 +54,12 @@ $("joinBtn").addEventListener("click", async () => {
   window.close();
 });
 
+// pasting a code/link then hitting Enter should join, same as clicking Join —
+// there's no <form> here (Enter does nothing by default on a bare input)
+$("codeInput").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") $("joinBtn").click();
+});
+
 $("leaveBtn").addEventListener("click", async () => {
   await sw({ type: "leave", tabId });
   window.close();
