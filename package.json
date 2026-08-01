@@ -10,6 +10,7 @@
     "test:e2e": "node test/e2e.js"
   },
   "dependencies": {
+    "qrcode": "^1.5.4",
     "selfsigned": "^5.5.0",
     "ws": "^8.18.0"
   },

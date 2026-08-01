@@ -410,6 +410,12 @@ function render() {
   if (linkOnly) {
     $("shareLink").value = `${location.origin}/?k=${encodeURIComponent(a.key)}${location.hash}`;
   }
+  // re-fetched whenever mode/key changes, not on every render call
+  const qrTag = `${a.mode}:${a.key || ""}`;
+  if ($("qrImg").dataset.qrFor !== qrTag) {
+    $("qrImg").dataset.qrFor = qrTag;
+    $("qrImg").src = `/qr?v=${encodeURIComponent(qrTag)}`;
+  }
 }
 
 $("accessBtn").addEventListener("click", () => {

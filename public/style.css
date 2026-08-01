@@ -272,6 +272,14 @@ header { display: flex; align-items: baseline; justify-content: space-between; m
   background: var(--surface);
   padding: 8px 10px;
 }
+.qr-row { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
+.qr-row .qr {
+  flex: none; width: 96px; height: 96px;
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 6px;
+}
+.qr-row .qr-hint { color: var(--muted); font-size: 12.5px; line-height: 1.5; margin: 0; }
 
 /* drop overlay */
 #dropOverlay {

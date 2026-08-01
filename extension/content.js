@@ -392,6 +392,14 @@
     reconcileTimer = setTimeout(() => { reconciling = false; }, 1200);
   }
 
+  // No `room` yet (state arrived before the first room snapshot) is treated
+  // as solo — there is nobody proven present to correct against.
+  function soloRoom() {
+    if (!room) return true;
+    const others = (room.members || []).filter((m) => m.id !== room.meId);
+    return others.length === 0;
+  }
+
   function onRoomContent() {
     // we are on the room's content already if keys match; otherwise the
     // service worker navigates this tab â€” nothing to do here.
@@ -420,6 +428,14 @@
         return; // their intent wins this round; the room will confirm it
       }
     }
+
+    // Nobody else is in the room: there is no drift to correct, only a
+    // network round-trip's worth of lag between our own reported position and
+    // our own live one. Correcting against that echo is exactly what was
+    // producing audible seeks and playback-rate wobble while watching alone —
+    // still report play/pause above (kept the room's state right for whoever
+    // joins next), just skip acting on it.
+    if (soloRoom()) { adapter.setRate(1); return; }
 
     // A source with no smooth-correction path (canRate:false — today just
     // Spotify) can only fix drift with a hard, audible seek. Its position

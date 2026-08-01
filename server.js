@@ -9,6 +9,7 @@ const os = require("os");
 const crypto = require("crypto");
 const { WebSocketServer } = require("ws");
 const selfsigned = require("selfsigned");
+const QRCode = require("qrcode");
 const { MEDIA_DIR, resolveMeta, download, probeDuration } = require("./jukebox");
 
 // A jam server dies mid-party over nothing: log loudly, keep playing.
@@ -264,6 +265,7 @@ const handler = (req, res) => {
   if (req.method === "POST" && urlPath === "/upload") return handleUpload(req, res);
   if (urlPath.startsWith("/media/")) return serveMedia(req, res, urlPath.slice(7));
   if (urlPath.startsWith("/r/")) return serveRoomLink(req, res, urlPath.slice(3));
+  if (urlPath === "/qr") return serveQr(req, res);
 
   const file = urlPath === "/" ? "index.html" : urlPath.slice(1);
   const filePath = path.join(PUBLIC_DIR, path.normalize(file));
@@ -310,6 +312,22 @@ ${room
 </div></body></html>`;
   res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
   res.end(body);
+}
+
+// A phone joins by scanning this, not by typing an HTTPS IP:port by hand.
+// `req.headers.host` is exactly what the requesting browser is already
+// addressing this server as â€” on the host machine that's the LAN IP (the
+// README has whoever runs the server open the printed wifi URL, not
+// localhost), so a QR generated from that context already points a phone at
+// the right address without the server having to guess between interfaces.
+function serveQr(req, res) {
+  const url = `https://${req.headers.host}/${access.mode === "link" ? `?k=${access.key}` : ""}`;
+  QRCode.toString(url, { type: "svg", margin: 1, color: { dark: "#141210", light: "#0000" } })
+    .then((svg) => {
+      res.writeHead(200, { "Content-Type": "image/svg+xml", "Cache-Control": "no-store" });
+      res.end(svg);
+    })
+    .catch(() => { res.writeHead(500); res.end(); });
 }
 
 function escapeHtml(s) {

@@ -146,8 +146,13 @@ function agentWithVideo(vid) {
   vm.runInContext(SRC, sandbox, { timeout: 5000 });
   // feed the REAL port.onMessage handler a "state" message — the same shape
   // sw.js sends — so the REAL reconcile() closure has a state to compare
-  // against, exactly as it would in the extension.
-  const pushState = (state, content) => capturedPortMsg({ type: "state", state, content, offset: 0, room: { members: [] } });
+  // against, exactly as it would in the extension. Defaults to a two-person
+  // room (someone genuinely to sync against); pass an explicit `room` for the
+  // solo case.
+  const pushState = (state, content, room) => capturedPortMsg({
+    type: "state", state, content, offset: 0,
+    room: room || { meId: "me", members: [{ id: "me" }, { id: "them" }] },
+  });
   return { video: vid, tick: () => capturedTick && capturedTick(), pushState };
 }
 
@@ -247,6 +252,24 @@ function reconcileOnce(adapter, roomExpectedTime, tolerance, canRate, prevOverSi
     tick();
     check("a real desync on a continuous source corrects on the first tick",
       vid.seeks.length >= 1, `${vid.seeks.length} seeks`);
+  }
+
+  // ---- 4d. solo (only yourself in the room): the SAME desync that 4c just
+  //          proved gets corrected must NOT be corrected here — there is
+  //          nobody to sync against, only a laggy echo of your own reported
+  //          position. This is the actual "heavy / punishment" bug: solo
+  //          playback fighting itself with seeks and rate wobble. ----
+  {
+    const vid = { pos: 5, paused: false, plays: 0, pauses: 0, seeks: [] };
+    const { tick, pushState } = agentWithVideo(vid);
+    pushState(
+      { paused: false, time: 40, at: Date.now(), rate: 1 },
+      { key: "https://example.com/watch", url: "https://example.com/watch", title: "x" },
+      { meId: "me", members: [{ id: "me" }] } // solo: only self is present
+    );
+    tick();
+    check("solo playback does not correct against its own echo",
+      vid.seeks.length === 0, `${vid.seeks.length} seeks`);
   }
 
   // ---- 5. the unexplained-jump detector: only meaningful for a real
