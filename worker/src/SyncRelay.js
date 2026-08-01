@@ -95,10 +95,30 @@ export class SyncRelay extends DurableObject {
   }
 
   async fetch(request) {
+    const url = new URL(request.url);
+    if (url.pathname === "/stats") return this.statsResponse();
     const pair = new WebSocketPair();
     const [client, server] = Object.values(pair);
     this.ctx.acceptWebSocket(server);
     return new Response(null, { status: 101, webSocket: client });
+  }
+
+  // Live counts, not stored ones: derived straight from currently-open
+  // sockets (this.ctx.getWebSockets()) rather than room storage, so a room
+  // that's technically persisted but has nobody connected right now doesn't
+  // inflate the numbers.
+  statsResponse() {
+    const rooms = new Set();
+    let users = 0;
+    for (const ws of this.ctx.getWebSockets()) {
+      const a = ws.deserializeAttachment();
+      if (!a) continue;
+      users++;
+      rooms.add(a.roomCode);
+    }
+    return new Response(JSON.stringify({ activeUsers: users, activeRooms: rooms.size, at: Date.now() }), {
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+    });
   }
 
   // ---------- room storage ----------

@@ -10,10 +10,15 @@ export { SyncRelay } from "./SyncRelay.js";
 
 export default {
   async fetch(request, env) {
-    if (request.headers.get("Upgrade") !== "websocket") {
-      return new Response("sync-lis relay: expects a WebSocket connection", { status: 426 });
-    }
+    const url = new URL(request.url);
     const stub = env.SYNC_RELAY.getByName("relay");
+    // GET /stats: live activeUsers/activeRooms counts, for a dashboard —
+    // routed through the same singleton DO so it reads real connections,
+    // not a separate count that could drift from reality.
+    if (url.pathname === "/stats") return stub.fetch(request);
+    if (request.headers.get("Upgrade") !== "websocket") {
+      return new Response("sync-lis relay: expects a WebSocket connection (or GET /stats)", { status: 426 });
+    }
     return stub.fetch(request);
   },
 };
