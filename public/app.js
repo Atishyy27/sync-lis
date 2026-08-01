@@ -155,11 +155,41 @@ function syncPlayback() {
       audio.currentTime = targetTime();
     }
   } else if (audio.paused) {
-    if (audio.duration) audio.currentTime = targetTime();
-    audio.play().then(() => $("unmuteBtn").classList.add("hidden"))
-      .catch(() => $("unmuteBtn").classList.remove("hidden"));
+    // Same unconditional-seek bug as the paused branch, plus this one also
+    // called .play() on every single broadcast — which, while a PREVIOUS
+    // .play() is still buffering, restarts that buildup right as it was
+    // making progress, and the seek right before it makes that worse.
+    // Every hold toggle triggers its own broadcast, so this branch could
+    // re-fire within milliseconds of itself: seek, play, (still not ready
+    // so) waiting, hold, broadcast, seek, play, waiting, hold... a real,
+    // observed loop settling in single-digit milliseconds, far faster than
+    // any actual network recovery — proof it was never really the network.
+    if (audio.duration && Math.abs(audio.currentTime - targetTime()) > 0.3) {
+      audio.currentTime = targetTime();
+    }
+    // A first attempt at a time-based cooldown here (skip re-calling play()
+    // for 1.5s) traded the loop for a worse bug: a hold that clears within
+    // that window calls audio.pause() while the earlier play() is still
+    // pending, which the spec aborts with AbortError — and with the cooldown
+    // in place, and nothing else scheduled to call syncPlayback() again,
+    // that abort just sat there paused forever. An in-flight guard avoids
+    // stacking play() calls (the original problem) without blocking a real
+    // retry: AbortError specifically means something else interrupted us,
+    // not that anything is actually wrong, so it retries itself.
+    if (!playInFlight) {
+      playInFlight = true;
+      audio.play().then(() => {
+        playInFlight = false;
+        $("unmuteBtn").classList.add("hidden");
+      }).catch((e) => {
+        playInFlight = false;
+        if (e && e.name === "AbortError") setTimeout(syncPlayback, 50);
+        else $("unmuteBtn").classList.remove("hidden");
+      });
+    }
   }
 }
+let playInFlight = false;
 
 // drift correction: seek when far off, nudge playbackRate when close
 setInterval(() => {
