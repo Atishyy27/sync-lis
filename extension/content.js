@@ -674,6 +674,9 @@
             if (h.type === "syncChat") ui.chat(h.from, h.text, h.videoTime);
             else ui.did(h.text, h.type === "syncNarrate");
           }
+          // a freshly opened chat starts at the latest message, not
+          // wherever per-message auto-stick timing happened to land it
+          ui.scrollToBottom();
         }
       } else if (msg.type === "chat") {
         if (ui) ui.chat(msg.from, msg.text, msg.videoTime);

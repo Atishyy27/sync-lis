@@ -165,6 +165,22 @@ async function setup(page) {
   check("collapsing hides the panel", collapsed.panelHidden);
   check("and leaves only the small tab, which is the whole point of moving off the side panel", collapsed.tabShown);
 
+  // ---- 8. typing space into the composer must not leak to the page's own
+  //         keyboard shortcuts (YouTube's spacebar = play/pause, chief
+  //         among them) — shadow DOM does not stop bubbling by itself ----
+  await page.evaluate(() => window.__syncLisUI.setExpanded(true));
+  const spaceLeak = await page.evaluate(() => {
+    let sawSpaceOnDocument = false;
+    document.addEventListener("keydown", (e) => { if (e.key === " ") sawSpaceOnDocument = true; });
+    const sh = document.getElementById("sync-lis-root").shadowRoot;
+    const input = sh.querySelector("#slMsg");
+    input.focus();
+    input.dispatchEvent(new KeyboardEvent("keydown", { key: " ", code: "Space", bubbles: true, composed: true }));
+    return sawSpaceOnDocument;
+  });
+  check("spacebar typed into chat never reaches the underlying page's keydown listeners",
+    !spaceLeak);
+
   await page.close();
   await browser.close();
   console.log(results.join("\n"));

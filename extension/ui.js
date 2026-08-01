@@ -299,6 +299,18 @@ button:focus-visible, .jamrow input:focus-visible, .dmini input:focus-visible, .
       this.wrap.appendChild(this.buildSheet());
 
       this.sh.append(style, this.wrap);
+
+      // Shadow DOM doesn't stop bubbling — a keystroke typed into any panel
+      // input still reaches the page's own document-level shortcut
+      // listeners (YouTube's spacebar = play/pause chief among them), which
+      // is why typing a space into chat kept pausing the video underneath.
+      // Stopped at the shadow root, the highest point still inside our own
+      // tree, for every text input the panel has now or grows later.
+      const isTextInput = (t) => t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA");
+      for (const type of ["keydown", "keyup", "keypress"]) {
+        this.sh.addEventListener(type, (e) => { if (isTextInput(e.target)) e.stopPropagation(); });
+      }
+
       document.documentElement.appendChild(this.root);
 
       window.addEventListener("message", () => {}); // reserved
@@ -740,7 +752,16 @@ button:focus-visible, .jamrow input:focus-visible, .dmini input:focus-visible, .
       const stick = this.atBottom();
       s.appendChild(node);
       while (s.children.length > 200) s.firstChild.remove();
-      if (stick) s.scrollTop = s.scrollHeight;
+      // an appended image loads asynchronously and grows the container
+      // after scrollHeight was already read here; rAF gives layout a beat
+      // to settle first so a burst of messages doesn't undershoot the true
+      // bottom
+      if (stick) requestAnimationFrame(() => { s.scrollTop = s.scrollHeight; });
+    },
+    scrollToBottom() {
+      if (!this.panel) return;
+      const s = this.panel.querySelector("#slStream");
+      requestAnimationFrame(() => { s.scrollTop = s.scrollHeight; });
     },
     chat(from, text, at) {
       if (!this.panel) return;
