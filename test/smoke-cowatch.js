@@ -190,6 +190,32 @@ process.on("exit", () => {
   await sleep(400);
   check("finishing advances now that names agree", her.room.content.url.includes("v=yyy"));
 
+  // A transport command names the content it was measured against. This is
+  // the Spotify bug: a play/pause/seek can be sent naming the track that just
+  // ended (a stale position read from a lagging DOM), and if it lands anywhere
+  // near a content switch it must not overwrite the new track's clock.
+  her.send({ type: "syncQueueNext" });
+  await sleep(300);
+  her.send({ type: "syncQueueAdd", url: "https://open.spotify.com/track/aaa", key: "sp:track:aaa", title: "song A" });
+  await sleep(400);
+  const keyA = her.room.content.key;
+
+  // stale command arrives AFTER the switch to B is already known
+  her.send({ type: "syncQueueAdd", url: "https://open.spotify.com/track/bbb", key: "sp:track:bbb", title: "song B" });
+  him.send({ type: "syncEnded", key: keyA }); // A finishes, room moves to B (time reset to 0)
+  await sleep(400);
+  check("room moved to song B at zero", her.room.content.key === "sp:track:bbb" && her.room.state.time === 0);
+  him.send({ type: "syncCmd", action: "pause", time: 224, key: keyA }); // late echo naming the old song
+  await sleep(300);
+  check("a stale command naming the old song cannot corrupt the new one",
+    her.room.content.key === "sp:track:bbb" && her.room.state.time !== 224,
+    `time became ${her.room.state.time}`);
+
+  // and a command with no key at all (the pre-fix shape) still works normally
+  him.send({ type: "syncCmd", action: "pause", time: 12 });
+  await sleep(300);
+  check("an honest command with no key still applies", her.room.state.time === 12);
+
   // identity is changeable after joining: link-joiners arrive unnamed
   him.send({ type: "syncIdentity", name: "Aditi", avatar: "🍿" });
   await sleep(300);

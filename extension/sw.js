@@ -41,7 +41,7 @@ function pushToPorts(s) {
     room: {
       code: s.code, server: s.server, meId: s.meId, members: s.members,
       hostId: s.hostId, locked: s.locked, countdownAt: s.countdownAt,
-      lastAction: s.lastAction,
+      lastAction: s.lastAction, queue: s.queue || [],
     },
   };
   for (const port of s.ports) {
@@ -148,6 +148,9 @@ function startSession(tabId, server, name, joinMsg) {
         s.locked = msg.locked;
         s.countdownAt = msg.countdownAt;
         s.lastAction = msg.lastAction;
+        // this was silently dropped before — the jam queue never reached the
+        // panel, even though the server tracked it correctly the whole time
+        s.queue = msg.queue || [];
         followContent(tabId, s);
         pushToPorts(s);
       } else if (msg.type === "syncSignal") {
@@ -302,24 +305,24 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 });
 
 // ---------- agent connection ----------
-
-// clicking the toolbar icon opens the side panel, which is the whole UI now
-chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
+//
+// One port per tab. There used to be a second, separate port for a Chrome
+// side-panel UI; the panel now lives on the page itself (injected alongside
+// the video-driving agent), so it is the same "sync-lis" connection — nothing
+// distinguishes UI from agent any more, because they are the same script.
 
 chrome.runtime.onConnect.addListener((port) => {
-  // the side panel speaks the same language as the page agent, so it simply
-  // joins the same set of listeners for this tab's room
-  const panel = port.name.startsWith("sync-lis-panel:");
-  if (!panel && (port.name !== "sync-lis" || !port.sender.tab)) return;
-  const tabId = panel ? Number(port.name.split(":")[1]) : port.sender.tab.id;
+  if (port.name !== "sync-lis" || !port.sender.tab) return;
+  const tabId = port.sender.tab.id;
   const joined = sessions.get(tabId);
   if (!joined) {
     try { port.postMessage({ type: "ended" }); } catch {}
     return;
   }
   joined.ports.add(port);
-  // a reopened panel gets the conversation back, not an empty box
-  if (panel && joined.history && joined.history.length) {
+  // A fresh connection — first join, or a reconnect after navigating between
+  // synced pages — gets the conversation replayed, not an empty box.
+  if (joined.history && joined.history.length) {
     try { port.postMessage({ type: "history", items: joined.history }); } catch {}
   }
   if (joined.state) pushToPorts(joined);
@@ -339,7 +342,6 @@ chrome.runtime.onConnect.addListener((port) => {
     pos: (m) => ({ type: "syncPos", time: m.time }),
     chat: (m) => ({ type: "syncChat", text: m.text }),
     react: (m) => ({ type: "syncReact", emoji: m.emoji }),
-    reactPanel: (m) => ({ type: "syncReact", emoji: m.emoji }),
     ready: (m) => ({ type: "syncReady", ready: m.ready }),
     hostLock: (m) => ({ type: "syncHostLock", locked: m.locked }),
   };
@@ -354,7 +356,7 @@ chrome.runtime.onConnect.addListener((port) => {
     if (RELAY[m.type]) {
       s.ws.send(JSON.stringify(RELAY[m.type](m)));
     } else if (m.type === "cmd") {
-      s.ws.send(JSON.stringify({ type: "syncCmd", action: m.action, time: m.time }));
+      s.ws.send(JSON.stringify({ type: "syncCmd", action: m.action, time: m.time, key: m.key }));
     } else if (m.type === "voice") {
       (m.on ? startVoice(tabId) : Promise.resolve(stopVoice(tabId)))
         .then((r) => relayToPorts(s, { type: "voiceState", on: !!(r && r.ok), error: r && r.error }));
@@ -367,6 +369,12 @@ chrome.runtime.onConnect.addListener((port) => {
       s.ws.send(JSON.stringify({
         type: "syncContent", key: m.key, url: m.url, title: m.title, kind: m.kind, time: m.time,
       }));
+    } else if (m.type === "leave") {
+      // the on-page panel can leave the room directly, same as the popup does
+      sessions.delete(tabId);
+      s.retries = 99;
+      try { s.ws.close(); } catch {}
+      endPorts(s);
     }
   });
   port.onDisconnect.addListener(() => {

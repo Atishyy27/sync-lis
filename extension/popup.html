@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+
+  <!-- not in a room on this tab -->
+  <section id="door" class="pad">
+    <div class="mark">sync&#8209;<b>lis</b></div>
+    <p class="hint">Open what you want to watch or listen to in this tab, then start a room. The panel appears on the page once you're in.</p>
+    <input id="nameInput" type="text" maxlength="24" placeholder="your name" autocomplete="off" />
+    <div id="faces" class="faces"></div>
+    <button id="createBtn" class="go">Start a room</button>
+    <div class="or"><span>or join</span></div>
+    <div class="row">
+      <input id="codeInput" type="text" placeholder="room code or link" autocomplete="off" />
+      <button id="joinBtn" class="chip">Join</button>
+    </div>
+    <p id="err" class="err hidden"></p>
+  </section>
+
+  <!-- already in a room on this tab -->
+  <section id="here" class="pad hidden">
+    <div class="mark">sync&#8209;<b>lis</b></div>
+    <div class="incode" id="roomCode">·····</div>
+    <p id="memberLine" class="hint"></p>
+    <button id="showBtn" class="go">Show the panel</button>
+    <button id="leaveBtn" class="chip warn">Leave room</button>
+  </section>
+
+  <script src="popup.js"></script>
+</body>
+</html>

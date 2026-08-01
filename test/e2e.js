@@ -172,6 +172,30 @@ const videoState = (page) => page.evaluate(() => {
     await check("panel injected on his page too", await until(() =>
       pageB.evaluate(() => !!document.getElementById("sync-lis-root"))));
 
+    // the real panel — not the synthetic one panel-widths.js drives — must
+    // actually show the real room once content.js wires a live connection
+    // into it, not just the veil/toast it always had.
+    // Note: ui.js's `window.__syncLisUI` lives in the content script's
+    // ISOLATED world and is invisible to page.evaluate() (a different global
+    // object from the page's own window, even though they share the same
+    // DOM) — so expand the panel by editing the shared DOM directly instead
+    // of calling into a function page.evaluate() cannot see.
+    await pageB.evaluate(() => {
+      const sh = document.getElementById("sync-lis-root").shadowRoot;
+      sh.querySelector(".panel").classList.remove("hidden2");
+      sh.querySelector(".tab").classList.add("hidden2");
+    });
+    await check("the real panel shows both people once expanded", await until(() =>
+      pageB.evaluate(() => {
+        const sh = document.getElementById("sync-lis-root").shadowRoot;
+        return sh.querySelectorAll(".person").length === 2 && sh.querySelectorAll(".runner").length === 2;
+      })));
+    await check("and the room code, from the real server", await until(() =>
+      pageB.evaluate((c) => {
+        const sh = document.getElementById("sync-lis-root").shadowRoot;
+        return sh.querySelector("#slPcode").textContent === c;
+      }, code)));
+
     // --- transport: play ---
     await pageA.evaluate(() => document.querySelector("video").play());
     const playing = await until(async () => {

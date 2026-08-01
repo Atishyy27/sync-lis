@@ -883,6 +883,14 @@ wss.on("connection", (ws) => {
     if (msg.type === "syncCmd" && syncRoom) {
       const t = Number(msg.time);
       if (!isFinite(t) || t < 0) return;
+      // A command names the content it was measured against. If the room has
+      // already moved on (a switch is mid-flight, or this is a stale message
+      // from just before one), applying its time would silently corrupt the
+      // shared clock — a paused-at-3:44 sent a beat late becomes everyone's
+      // position on a track that just started at 0. Drop it instead of
+      // trusting a caller-supplied timestamp against content we can't verify.
+      const wantKey = syncRoom.content && syncRoom.content.key;
+      if (wantKey && msg.key && msg.key !== wantKey) return;
       if (syncRoom.locked && syncMe.id !== syncRoom.hostId) {
         ws.send(JSON.stringify({ type: "syncNote", text: "Controls are locked by the host." }));
         // send the truth straight back so their player snaps into line now,

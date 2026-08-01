@@ -1,0 +1,84 @@
+/* the classic action popup — tiny, one job: get you into a room */
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --ink: #141210;
+  --panel: #1c1916;
+  --rule: #2a2620;
+  --text: #ece7df;
+  --mute: #9a9184;
+  --faint: #6b6357;
+  --iris: #ffb454;
+  --waiting: #e2614f;
+  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+  color-scheme: dark;
+}
+
+body {
+  width: 280px;
+  background: var(--ink);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.hidden { display: none !important; }
+.pad { padding: 16px; }
+
+.mark { font-size: 20px; font-weight: 300; letter-spacing: -0.6px; margin-bottom: 8px; }
+.mark b { font-weight: 600; }
+.mark::after { content: "."; color: var(--iris); }
+
+.hint { color: var(--mute); font-size: 12px; line-height: 1.55; margin-bottom: 12px; }
+.err { color: var(--waiting); font-size: 11.5px; margin-top: 8px; }
+
+button, input {
+  font: inherit; color: inherit; background: none; border: none;
+}
+button { cursor: pointer; }
+:focus-visible { outline: 1px solid var(--iris); outline-offset: 1px; }
+
+input {
+  width: 100%;
+  padding: 8px 10px;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  margin-bottom: 8px;
+}
+input:focus { border-color: color-mix(in srgb, var(--iris) 55%, var(--rule)); outline: none; }
+
+.faces { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
+.faces button {
+  width: 28px; height: 28px; font-size: 14px; line-height: 1;
+  border: 1px solid var(--rule); border-radius: 3px; background: var(--panel);
+}
+.faces button.on { border-color: var(--iris); background: color-mix(in srgb, var(--iris) 16%, transparent); }
+
+.go {
+  width: 100%; padding: 9px; text-align: center;
+  background: var(--iris); color: var(--ink);
+  font-weight: 600; border-radius: 3px;
+}
+.go:hover { filter: brightness(1.06); }
+
+.or {
+  display: flex; align-items: center; gap: 8px; margin: 12px 0 8px;
+  font-size: 9px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--faint);
+}
+.or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--rule); }
+
+.row { display: flex; gap: 6px; }
+.row input { flex: 1; min-width: 0; margin-bottom: 0; }
+.chip { padding: 8px 12px; border: 1px solid var(--rule); border-radius: 3px; color: var(--mute); font-size: 12px; }
+.chip:hover { color: var(--text); border-color: var(--faint); }
+.chip.warn { width: 100%; text-align: center; margin-top: 8px; }
+.chip.warn:hover { color: var(--waiting); border-color: var(--waiting); }
+
+.incode {
+  font-family: var(--mono); font-size: 24px; letter-spacing: 4px;
+  color: var(--iris); margin-bottom: 6px;
+}

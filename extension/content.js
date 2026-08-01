@@ -1,9 +1,11 @@
-﻿// sync-lis agent â€” injected into the tab being watched together.
-// Two jobs: (1) report what this tab is playing and when someone drives it,
-// (2) reconcile this tab against the room's state.
+﻿// sync-lis agent — injected into the tab being watched together.
+// Three jobs now: (1) report what this tab is playing and when someone drives
+// it, (2) reconcile this tab against the room's state, (3) drive the on-page
+// panel (ui.js) — there is no separate side-panel connection any more, this
+// is the only port for the whole room.
 //
 // Design rules:
-//   1. Reconcile against STATE, idempotently â€” echoes become no-ops.
+//   1. Reconcile against STATE, idempotently — echoes become no-ops.
 //   2. Small drift is fixed with playbackRate nudges, not visible seeks.
 //   3. Ads are a hold: never sync during one, resync when it ends.
 //   4. Site quirks live in adapters, not in the sync logic.
@@ -452,8 +454,14 @@
 
   function sendCmd(action) {
     if (reconciling || !port || adapter.isAd()) { counts.dropped++; return; }
+    // Never speak for content the room hasn't confirmed yet. If the page has
+    // already moved to a new track but the room still shows the old one, a
+    // position read right now belongs to nothing the room recognises — this
+    // is exactly the gap where a stale time reading (Spotify's transport
+    // sometimes lags its own track change by a render or two) gets sent.
+    if (content && adapter.key() && content.key !== adapter.key()) { counts.dropped++; return; }
     try {
-      port.postMessage({ type: "cmd", action, time: adapter.getTime() });
+      port.postMessage({ type: "cmd", action, time: adapter.getTime(), key: content && content.key });
       counts.sent++;
     } catch (e) {
       counts.err = String(e && e.message || e);
@@ -511,7 +519,7 @@
     const base = roomRate();
     if (Math.abs(r - base * 0.92) < 0.01 || Math.abs(r - base * 1.08) < 0.01) return;
     if (Math.abs(r - base) < 0.01) return;
-    tell({ type: "cmd", action: "rate", rate: r, time: adapter.getTime() });
+    tell({ type: "cmd", action: "rate", rate: r, time: adapter.getTime(), key: content && content.key });
   };
 
   // <video>-based sites report transport via events; Spotify is polled instead
@@ -559,7 +567,23 @@
 
   function mountUI() {
     if (!ui || ui.root) return;
-    ui.mount();
+    ui.mount({
+      onSend: (text) => tell({ type: "chat", text }),
+      onReact: (emoji) => tell({ type: "react", emoji }),
+      onBig: (emoji) => tell({ type: "big", emoji }),
+      onSting: (kind) => tell({ type: "sting", kind }),
+      onSecret: (text) => tell({ type: "secret", text }),
+      onReady: (v) => tell({ type: "ready", ready: v }),
+      onLock: (v) => tell({ type: "hostLock", locked: v }),
+      onVoice: (v) => tell({ type: "voice", on: v }),
+      onMute: (v) => tell({ type: "mute", muted: v }),
+      onTyping: () => tell({ type: "typing" }),
+      onIdentity: (name, avatar) => tell({ type: "identity", name, avatar }),
+      onQueueAdd: (url) => tell({ type: "queueAdd", url }),
+      onQueueRemove: (id) => tell({ type: "queueRemove", id }),
+      onQueueNext: () => tell({ type: "queueNext" }),
+      onLeave: () => tell({ type: "leave" }),
+    });
   }
 
   // The only thing worth interrupting the film for: the room is waiting, and
@@ -590,8 +614,27 @@
         offset = msg.offset;
         room = msg.room || null;
         mountUI();
+        if (ui) ui.renderRoom(state, content, room, offset);
         paintStatus();
         reconcile();
+      } else if (msg.type === "history") {
+        if (ui) {
+          ui.resetStream();
+          for (const h of msg.items) {
+            if (h.type === "syncChat") ui.chat(h.from, h.text, h.videoTime);
+            else ui.did(h.text, h.type === "syncNarrate");
+          }
+        }
+      } else if (msg.type === "chat") {
+        if (ui) ui.chat(msg.from, msg.text, msg.videoTime);
+      } else if (msg.type === "narrate") {
+        if (ui) ui.did(msg.text, true);
+      } else if (msg.type === "note") {
+        if (ui) ui.did(msg.text);
+      } else if (msg.type === "typing") {
+        if (ui) ui.setTyping(msg.from);
+      } else if (msg.type === "voiceState") {
+        if (ui) ui.setVoice(msg.on, msg.error);
       } else if (msg.type === "react") {
         if (ui) ui.float(msg.emoji);
       } else if (msg.type === "big") {
@@ -668,9 +711,10 @@
     if (holding && Date.now() - holdSince > (adapter.isAd() ? 45000 : 10000)) setHold(false);
   }, 2000);
 
-  // countdown and drift readouts need a faster tick than the sync loop
+  // countdown, drift, and the race track need a faster tick than the sync loop
   setInterval(() => {
     paintStatus();
+    if (ui && ui.panel && room) ui.renderRoom(state, content, room, offset);
     publishDebug();
   }, 400);
 

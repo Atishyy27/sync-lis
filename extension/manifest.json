@@ -3,8 +3,7 @@
   "name": "sync-lis",
   "version": "1.0.0",
   "description": "Watch and listen together, anywhere. Share one room link — what they play, you play, at the same timestamp. YouTube, Spotify, Netflix and more.",
-  "permissions": ["tabs", "scripting", "storage", "offscreen", "sidePanel"],
-  "side_panel": { "default_path": "sidepanel.html" },
+  "permissions": ["tabs", "scripting", "storage", "offscreen"],
   "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "sw.js"
@@ -16,5 +15,8 @@
       "run_at": "document_idle"
     }
   ],
-  "action": { "default_title": "sync-lis" }
+  "action": {
+    "default_title": "sync-lis",
+    "default_popup": "popup.html"
+  }
 }
