@@ -140,6 +140,29 @@ function startSession(tabId, server, name, joinMsg) {
         if (s.content) followContent(tabId, s);
         done({ code: s.code });
       } else if (msg.type === "syncState") {
+        // Two people can turn voice on within the same broadcast window: each
+        // one's "call everyone already talking" snapshot is taken before the
+        // other's flag has arrived, so neither calls the other and voice
+        // silently connects to nobody. Whenever this tab is already talking
+        // and the room shows someone ELSE newly on voice, dial them too.
+        if (voiceTabId === tabId) {
+          const before = new Set((s.members || []).filter((m) => m.voice).map((m) => m.id));
+          const nowIds = new Set();
+          for (const m of msg.members || []) {
+            if (m.id === s.meId) continue;
+            if (m.voice) {
+              nowIds.add(m.id);
+              if (!before.has(m.id)) toVoice({ type: "call", peerId: m.id });
+            }
+          }
+          // the mirror of the call fix above: someone turning voice off (or
+          // leaving the room) never told the other side to hang up, so a
+          // dead connection sat there reading "connected" until WebRTC's own
+          // much slower ICE timeout eventually noticed.
+          for (const id of before) {
+            if (!nowIds.has(id)) toVoice({ type: "peerLeft", peerId: id });
+          }
+        }
         s.state = msg.state;
         s.content = msg.content;
         s.offset = msg.now - Date.now();

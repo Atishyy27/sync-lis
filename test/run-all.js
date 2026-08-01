@@ -6,6 +6,7 @@ const path = require("path");
 
 const suites = [
   ["adapters: per-site identity", "adapters.js", []],
+  ["spotify: buffering-noise vs real drift", "spotify-jitter.js", []],
   ["panel: on-page rendering + responsiveness", "panel-widths.js", []],
   ["popup: boot and create flow", "popup-boot.js", []],
   ["protocol: jukebox", "smoke-jukebox.js", [path.join(__dirname, "fixture", "tone.m4a")]],
@@ -15,6 +16,7 @@ const suites = [
   ["chaos: 5 users", "chaos.js", ["5", path.join(__dirname, "fixture", "tone.m4a")]],
   ["browser: end to end", "e2e.js", []],
   ["browser: live sites", "live-sites.js", []],
+  ["browser: voice (simulated mic, two real peers)", "voice-e2e.js", []],
 ];
 
 // the jukebox suites need a tiny audio file; generate it once

@@ -359,6 +359,7 @@
   let lastSeenPaused = null; // this player's transport as of the last check
   let lastObserved = null;   // where the player was last time we looked
   let lastObservedAt = 0;
+  let overToleranceSince = 0; // debounce for hard-seek-only sources (see reconcile)
 
   const ui = window.__syncLisUI;
 
@@ -420,10 +421,29 @@
       }
     }
 
+    // A source with no smooth-correction path (canRate:false — today just
+    // Spotify) can only fix drift with a hard, audible seek. Its position
+    // reading is also the noisiest one we have: second-granular text that
+    // Spotify's own SDK documents as freezing then jumping during a
+    // micro-buffer. One noisy sample must not cost an audible seek, so acting
+    // requires the SAME over-tolerance reading on back-to-back ticks —
+    // exactly what a transient buffering blip will not survive, and exactly
+    // what a real, sustained desync will.
+    const overTolerance = (t) => {
+      if (adapter.canRate) return t; // continuous sources correct smoothly; no need to debounce
+      const now = Date.now();
+      if (t) {
+        if (overToleranceSince === 0) overToleranceSince = now;
+        return now - overToleranceSince > 2000;
+      }
+      overToleranceSince = 0;
+      return false;
+    };
+
     const exp = expectedTime();
     if (state.paused) {
       if (!localPaused) { beginReconcile(); adapter.pause(); lastSeenPaused = true; }
-      if (Math.abs(adapter.getTime() - state.time) > adapter.tolerance) { beginReconcile(); adapter.seek(state.time); }
+      if (overTolerance(Math.abs(adapter.getTime() - state.time) > adapter.tolerance)) { beginReconcile(); adapter.seek(state.time); }
       adapter.setRate(1);
       return;
     }
@@ -435,7 +455,7 @@
       return;
     }
     const d = adapter.getTime() - exp;
-    if (Math.abs(d) > adapter.tolerance) {
+    if (overTolerance(Math.abs(d) > adapter.tolerance)) {
       beginReconcile();
       adapter.seek(exp);
       adapter.setRate(1);
@@ -680,10 +700,16 @@
     reconcile();
     if (adapter.ready()) tell({ type: "pos", time: adapter.getTime() });
 
-    // Buttons like Prime's "Skip intro" move the player without any event we
-    // can tell apart from drift, so an unexplained jump is treated as a seek
-    // the person meant. Our own corrections are excluded by `reconciling`.
-    if (state && !state.paused && adapter.ready() && !adapter.isAd()) {
+    // Buttons like Prime's "Skip intro" move a real <video> element without
+    // any event we can tell apart from drift, so an unexplained jump there is
+    // treated as a seek the person meant. This only makes sense for a site we
+    // are actually listening to (`watched`) — Spotify has no video element at
+    // all, so this used to run there too, misreading its own documented
+    // quirks (position freezing then catching up during a micro-buffer,
+    // confirmed against Spotify's own SDK issue tracker; ours is a step
+    // further removed, scraped from second-granular text) as a person having
+    // pressed a button that does not exist.
+    if (watched && state && !state.paused && adapter.ready() && !adapter.isAd()) {
       const now = adapter.getTime();
       if (lastObserved !== null && !reconciling && Date.now() - userSeekAt > 1500) {
         const predicted = lastObserved + ((Date.now() - lastObservedAt) / 1000) * roomRate();

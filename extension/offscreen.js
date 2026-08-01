@@ -137,4 +137,20 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     hangUp();
     return;
   }
+  if (msg.type === "call") {
+    // someone already in the room just turned voice on; if we are already
+    // talking, dial them too rather than waiting for them to notice us.
+    // Covers the case where two people enable voice within the same
+    // broadcast window and neither's "call everyone already on" snapshot
+    // includes the other.
+    if (mic) callPeer(msg.peerId);
+    return;
+  }
+  if (msg.type === "status") {
+    sendResponse({
+      hasMic: !!mic,
+      peers: [...peers.entries()].map(([id, pc]) => ({ id, state: pc.connectionState })),
+    });
+    return; // sync response
+  }
 });

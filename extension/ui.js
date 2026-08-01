@@ -571,8 +571,14 @@ button:focus-visible, .jamrow input:focus-visible, .dmini input:focus-visible, .
       this.sheet.querySelector("#slSheetClose").onclick = () => this.sheet.classList.remove("show");
       this.sheet.addEventListener("click", (e) => { if (e.target === this.sheet) this.sheet.classList.remove("show"); });
       this.sheet.querySelector("#slCopy").onclick = () => {
-        navigator.clipboard.writeText(this.sheet.querySelector("#slLink").value)
-          .then(() => this.did("link copied"));
+        const btn = this.sheet.querySelector("#slCopy");
+        // feedback lives on the button itself, not in the thread — copying a
+        // link is not something worth a permanent line in the conversation
+        navigator.clipboard.writeText(this.sheet.querySelector("#slLink").value).then(() => {
+          const was = btn.textContent;
+          btn.textContent = "Copied";
+          setTimeout(() => { btn.textContent = was; }, 1400);
+        });
       };
       this.sheet.querySelector("#slSaveMe").onclick = () => {
         const name = this.sheet.querySelector("#slMeName").value.trim();
