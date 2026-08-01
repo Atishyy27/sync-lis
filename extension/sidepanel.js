@@ -55,6 +55,7 @@ function connect() {
       case "note": did(m.text); break;
       case "secret": said(m.from, m.text, 0); break;
       case "sting": did(`${m.from} played a ${m.kind}`); break;
+      case "react": did(`${m.from} ${m.emoji}`); break;
       case "big": did(`${m.from} sent ${m.emoji}`); break;
       case "typing":
         $("typing").textContent = `${m.from} is typing`;
@@ -195,7 +196,7 @@ function render() {
 
   // --- the running order ---
   const q = r.queue || [];
-  $("linkBtn").textContent = `${(r.server || RELAY).replace(/^https?:\/\//, "")}/r/${r.code}`;
+  $("roomCode").textContent = r.code || "·····";
   $("qempty").classList.toggle("hidden", q.length > 0);
   const ql = $("qlist");
   ql.innerHTML = "";
@@ -321,18 +322,27 @@ const secretPane = (d) => {
 
 $("more").addEventListener("click", () => drawer("menu", menu));
 
-// the emoji you actually use, always one tap away, never behind a menu
+// One tap throws it on the screen. That is what a reaction is for, and making
+// the tap type into the message box instead was a straight regression: it
+// removed the only one-gesture way to say something during a film.
 const QUICK = ["😂", "❤️", "🔥", "😭", "💀", "👀", "🎉", "🫠"];
 (() => {
   const box = $("quick");
   for (const e of QUICK) {
     const b = document.createElement("button");
     b.textContent = e;
-    b.title = "tap to type, hold to send big";
-    b.onclick = () => { $("msg").value += e; $("msg").focus(); };
-    let held = null;
-    b.onpointerdown = () => { held = setTimeout(() => { tell({ type: "big", emoji: e }); held = "sent"; }, 450); };
-    b.onpointerup = () => { if (held && held !== "sent") clearTimeout(held); if (held === "sent") { held = null; } };
+    b.title = "throw it on screen — hold for a big one";
+    let timer = null, big = false;
+    b.addEventListener("pointerdown", () => {
+      big = false;
+      timer = setTimeout(() => { big = true; tell({ type: "big", emoji: e }); b.classList.add("sent"); }, 450);
+    });
+    b.addEventListener("pointerup", () => {
+      clearTimeout(timer);
+      if (!big) { tell({ type: "react", emoji: e }); b.classList.add("sent"); }
+      setTimeout(() => b.classList.remove("sent"), 220);
+    });
+    b.addEventListener("pointerleave", () => clearTimeout(timer));
     box.appendChild(b);
   }
 })();

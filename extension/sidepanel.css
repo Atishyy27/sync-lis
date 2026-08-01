@@ -1,4 +1,4 @@
-/* sync-lis — an instrument, not a dashboard.
+﻿/* sync-lis â€” an instrument, not a dashboard.
  *
  * This strip sits beside a film for two hours. It has to recede almost
  * completely, then be unmistakable the second someone falls behind. So there
@@ -37,7 +37,9 @@ body {
   background: var(--ink);
   color: var(--text);
   font-family: var(--sans);
-  font-size: 13px;
+  /* the panel IS the viewport here, so vw tracks its real width and the
+     type shrinks with it instead of overflowing at higher zoom */
+  font-size: clamp(11.5px, 3.4vw, 13px);
   line-height: 1.5;
   min-height: 100vh;
   display: flex;
@@ -59,11 +61,11 @@ button { cursor: pointer; }
 /* ---------- the hero: are we together ---------- */
 
 .state {
-  padding: 20px 16px 16px;
+  padding: clamp(12px, 4.5vw, 20px) clamp(10px, 4vw, 16px) clamp(10px, 3.5vw, 16px);
   border-bottom: 1px solid var(--rule);
 }
 .state-line {
-  font-size: 21px;
+  font-size: clamp(15px, 5.6vw, 21px);
   font-weight: 300;
   letter-spacing: -0.4px;
   line-height: 1.25;
@@ -116,7 +118,7 @@ button { cursor: pointer; }
 }
 .title {
   margin-top: 5px;
-  font-size: 14px;
+  font-size: clamp(12px, 3.9vw, 14px);
   font-weight: 500;
   line-height: 1.35;
   word-break: break-word;
@@ -265,7 +267,7 @@ button { cursor: pointer; }
 
 .door { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 24px 18px; gap: 12px; }
 /* the wordmark, with the punctuation doing the work */
-.mark { font-size: 26px; font-weight: 300; letter-spacing: -1px; }
+.mark { font-size: clamp(20px, 7vw, 26px); font-weight: 300; letter-spacing: -1px; }
 .mark b { font-weight: 600; }
 .mark::after { content: "."; color: var(--iris); }
 .door p { color: var(--mute); font-size: 12px; line-height: 1.6; }
@@ -294,13 +296,20 @@ button { cursor: pointer; }
   border-bottom: 1px solid var(--rule);
   background: var(--panel);
 }
-.roombar .mark { font-size: 14px; letter-spacing: -0.4px; flex: none; }
+/* One thing, not four. The full URL took the whole row and left the header
+   looking like a toolbar; the code is short, memorable, and copies the link. */
 .roombar .link {
   flex: 1; min-width: 0;
-  font-family: var(--mono); font-size: 10px;
-  color: var(--iris);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  background: none; border: none; text-align: left;
+  display: flex; align-items: baseline; gap: 7px;
+  background: none; border: none; text-align: left; padding: 0;
+}
+.roombar .rk {
+  font-size: 9px; letter-spacing: 1.6px; text-transform: uppercase;
+  color: var(--faint);
+}
+.roombar .rc {
+  font-family: var(--mono); font-size: clamp(12px, 4vw, 14px);
+  letter-spacing: 2px; color: var(--iris);
 }
 .roombar .copy, .roombar .cog {
   flex: none; padding: 4px 8px; font-size: 10.5px;
@@ -357,3 +366,4 @@ button { cursor: pointer; }
   .playing, .people, .stream, .composer { padding-left: 12px; padding-right: 12px; }
   .who .nm { max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
+

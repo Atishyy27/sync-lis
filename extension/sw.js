@@ -172,7 +172,7 @@ function startSession(tabId, server, name, joinMsg) {
       } else if (msg.type === "syncReact") {
         // your own reaction floats on your screen too; it used to be filtered
         // out back when the page drew it locally on click
-        relayToPorts(s, { type: "react", emoji: msg.emoji });
+        relayToPorts(s, { type: "react", emoji: msg.emoji, from: msg.from });
       } else if (msg.type === "syncNote") {
         relayToPorts(s, { type: "note", text: msg.text });
       } else if (msg.type === "syncError") {
@@ -339,6 +339,7 @@ chrome.runtime.onConnect.addListener((port) => {
     pos: (m) => ({ type: "syncPos", time: m.time }),
     chat: (m) => ({ type: "syncChat", text: m.text }),
     react: (m) => ({ type: "syncReact", emoji: m.emoji }),
+    reactPanel: (m) => ({ type: "syncReact", emoji: m.emoji }),
     ready: (m) => ({ type: "syncReady", ready: m.ready }),
     hostLock: (m) => ({ type: "syncHostLock", locked: m.locked }),
   };

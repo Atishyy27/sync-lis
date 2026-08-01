@@ -150,6 +150,46 @@ process.on("exit", () => {
   await sleep(300);
   check("you can pull your own pick", !her.room.queue.some((x) => x.id === spare.id));
 
+  // The queue only knows a link. The player knows the page calls itself
+  // something else entirely (yt:<id>). If those two are treated as different
+  // things, nobody is ever "arrived", the room holds, and playback pauses on
+  // a loop — which is exactly what solo playback looked like.
+  her.send({ type: "syncQueueNext" }); // clear whatever is on
+  await sleep(300);
+  her.send({ type: "syncQueueAdd", url: "https://www.youtube.com/watch?v=zzz" });
+  await sleep(400);
+  check("a link queued with no key still starts", her.room.content && her.room.content.url.includes("v=zzz"));
+
+  // now the player arrives and calls it by the adapter's name. Adopting that
+  // name must NOT look like someone switching to something new, or the
+  // timeline resets and everyone gets paused again.
+  const switchesBefore = her.got("syncNarrate").length;
+  him.send({
+    type: "syncContent", key: "yt:zzz",
+    url: "https://www.youtube.com/watch?v=zzz", title: "Real Title", kind: "youtube", time: 0,
+  });
+  await sleep(400);
+  check("the room adopts the player's name for it", her.room.content.key === "yt:zzz");
+  check("adopting a name is not announced as a switch",
+    her.got("syncNarrate").length === switchesBefore);
+  check("and counts that person as arrived", her.room.members.find((m) => m.id === him.joined.meId).arrived === true);
+  check("the real title replaces the guess", her.room.content.title === "Real Title");
+
+  // the other side arrives on the same thing and nothing resets
+  her.send({
+    type: "syncContent", key: "yt:zzz",
+    url: "https://www.youtube.com/watch?v=zzz", title: "Real Title", kind: "youtube", time: 0,
+  });
+  await sleep(400);
+  check("everyone arrived, so nothing is holding", her.room.members.every((m) => m.arrived));
+
+  // and finishing it advances, because the keys finally agree
+  her.send({ type: "syncQueueAdd", url: "https://www.youtube.com/watch?v=yyy" });
+  await sleep(300);
+  him.send({ type: "syncEnded", key: "yt:zzz" });
+  await sleep(400);
+  check("finishing advances now that names agree", her.room.content.url.includes("v=yyy"));
+
   // identity is changeable after joining: link-joiners arrive unnamed
   him.send({ type: "syncIdentity", name: "Aditi", avatar: "🍿" });
   await sleep(300);

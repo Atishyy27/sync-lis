@@ -6,6 +6,7 @@ const path = require("path");
 
 const suites = [
   ["adapters: per-site identity", "adapters.js", []],
+  ["panel: widths and zoom", "panel-widths.js", []],
   ["protocol: jukebox", "smoke-jukebox.js", [path.join(__dirname, "fixture", "tone.m4a")]],
   ["protocol: sync rooms", "smoke-sync.js", []],
   ["protocol: co-watching", "smoke-cowatch.js", []],

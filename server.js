@@ -473,10 +473,15 @@ function labelFor(url) {
 function playNext(sr, byName) {
   const next = sr.queue.shift();
   if (!next) {
+    // nothing left: stop, rather than leaving the finished track sitting there
+    sr.content = null;
+    sr.state = { paused: true, time: 0, at: Date.now(), rate: sr.state.rate || 1 };
+    sr.heldPlaying = false;
     said(sr, "that was the last one");
     return syncBroadcast(sr);
   }
-  sr.content = { key: next.key || next.url, url: next.url, title: next.title, kind: next.kind || "generic" };
+  // key stays null until a player tells us what the page calls itself
+  sr.content = { key: next.key || null, url: next.url, title: next.title, kind: next.kind || "generic" };
   sr.contentAt = Date.now();
   armArrivalGrace(sr);
   for (const m of sr.members.values()) m.arrivedKey = null;
@@ -528,7 +533,10 @@ const ARRIVAL_GRACE_MS = 20000;
 
 function isHolding(m, sr) {
   if (m.holding) return true;
-  if (!sr.content || m.arrivedKey === sr.content.key) return false;
+  if (!sr.content) return false;
+  if (sr.content.key && m.arrivedKey === sr.content.key) return false;
+  // A queued link has no name until a player tells us one, so until then
+  // nobody counts as arrived. Either way the wait has a ceiling.
   return Date.now() - (sr.contentAt || 0) < ARRIVAL_GRACE_MS;
 }
 
@@ -718,7 +726,7 @@ wss.on("connection", (ws) => {
           const entry = {
             id: sr.qid++,
             url,
-            key: String(msg.key || "").slice(0, 200) || url,
+            key: String(msg.key || "").slice(0, 200) || null,
             title: String(msg.title || "").slice(0, 120) || labelFor(url),
             kind: String(msg.kind || "generic").slice(0, 16),
             byId: me.id,
@@ -821,6 +829,20 @@ wss.on("connection", (ws) => {
       const key = String(msg.key || "").slice(0, 200);
       const url = String(msg.url || "").slice(0, 800);
       if (!key || !/^https?:\/\//.test(url)) return;
+
+      // A link queued from the panel only carries a URL. The player is the
+      // only thing that sees the real page, so the first one to land on it
+      // names it for the room. Adopting that name is NOT a content switch:
+      // treating it as one reset the timeline and paused everyone on a loop,
+      // which is what solo playback looked like.
+      if (syncRoom.content && !syncRoom.content.key) {
+        syncRoom.content.key = key;
+        syncMe.arrivedKey = key;
+        const real = String(msg.title || "").slice(0, 200);
+        if (real && !/^https?:\/\/| · /.test(real)) syncRoom.content.title = real;
+        applyHolds(syncRoom);
+        return syncBroadcast(syncRoom);
+      }
 
       // already the room's content: this is someone arriving on it
       if (syncRoom.content && syncRoom.content.key === key) {
