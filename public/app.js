@@ -145,7 +145,15 @@ function syncPlayback() {
   }
   if (cur.pausedAt) {
     audio.pause();
-    if (audio.duration) audio.currentTime = targetTime();
+    // Only correct if actually off — this used to seek unconditionally on
+    // EVERY state broadcast (member pos updates, chat, anything), even when
+    // nothing had moved. Setting currentTime to the value it's already at
+    // can still fire a 'waiting' event on some browsers, which set holding
+    // true, which re-broadcast this same paused state, which seeked again —
+    // a self-sustaining loop that looked exactly like nonstop buffering.
+    if (audio.duration && Math.abs(audio.currentTime - targetTime()) > 0.3) {
+      audio.currentTime = targetTime();
+    }
   } else if (audio.paused) {
     if (audio.duration) audio.currentTime = targetTime();
     audio.play().then(() => $("unmuteBtn").classList.add("hidden"))
@@ -259,8 +267,12 @@ function setHold(next) {
   holding = next;
   send({ type: "hold", holding });
 }
-audio.addEventListener("waiting", () => setHold(true));
+// A deliberate pause (the room says pausedAt) triggers its own currentTime
+// writes above, which can fire 'waiting' with nothing actually stalled —
+// only trust 'waiting' as a real stall while we're actually trying to play.
+audio.addEventListener("waiting", () => { if (!audio.paused) setHold(true); });
 audio.addEventListener("playing", () => setHold(false));
+audio.addEventListener("canplay", () => setHold(false));
 audio.addEventListener("canplaythrough", () => setHold(false));
 setInterval(() => {
   if (!state || !state.current) return setHold(false);

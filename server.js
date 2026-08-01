@@ -121,18 +121,21 @@ class Room {
   // room pauses and picks up again by itself. On a phone over patchy wifi this
   // is the difference between listening together and drifting apart.
   applyHolds() {
-    const holding = [...this.members.values()].some((m) => m.holding);
+    const holders = [...this.members.values()].filter((m) => m.holding);
     if (!this.current) return;
-    if (holding && !this.current.pausedAt) {
+    if (holders.length && !this.current.pausedAt) {
       this.current.pausedAt = Date.now();
       this.heldPlaying = true;
       clearTimeout(this.advanceTimer);
+      console.log(`[jukebox] room "${this.name}" held for buffering: ${holders.map((m) => m.name).join(", ")}`);
       this.broadcastState();
-    } else if (!holding && this.heldPlaying && this.current.pausedAt) {
-      this.current.startedAt += Date.now() - this.current.pausedAt;
+    } else if (!holders.length && this.heldPlaying && this.current.pausedAt) {
+      const heldMs = Date.now() - this.current.pausedAt;
+      this.current.startedAt += heldMs;
       this.current.pausedAt = null;
       this.heldPlaying = false;
       this.armAdvance();
+      console.log(`[jukebox] room "${this.name}" resumed after ${heldMs}ms held`);
       this.broadcastState();
     }
   }
@@ -1008,6 +1011,10 @@ wss.on("connection", (ws) => {
         const h = !!msg.holding;
         if (h === me.holding) return;
         me.holding = h;
+        // a monitorable trail for "why is this room stuck buffering" —
+        // rapid alternating true/false from the same name is the signature
+        // of a client-side hold/seek feedback loop, not a real network stall
+        console.log(`[jukebox] ${me.name} holding=${h}`);
         room.applyHolds();
         room.broadcastState();
         break;
