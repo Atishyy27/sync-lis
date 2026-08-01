@@ -7,9 +7,10 @@ const HOST = "localhost:7777";
 const results = [];
 const check = (n, c) => { results.push(`${c ? "PASS" : "FAIL"}  ${n}`); if (!c) process.exitCode = 1; };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const RELAY_URL = process.env.SYNC_TEST_RELAY || `wss://${HOST}`;
 
 function client(name) {
-  const ws = new WebSocket(`wss://${HOST}`, { rejectUnauthorized: false });
+  const ws = new WebSocket(RELAY_URL, { rejectUnauthorized: false });
   const c = { name, ws, msgs: [], joined: null, room: null };
   ws.on("message", (raw) => {
     const m = JSON.parse(raw);

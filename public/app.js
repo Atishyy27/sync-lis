@@ -156,6 +156,11 @@ function syncPlayback() {
 // drift correction: seek when far off, nudge playbackRate when close
 setInterval(() => {
   if (!state || !state.current || state.current.pausedAt || audio.paused || !audio.duration) return;
+  // Nobody else in the room: correcting drift against your own network-
+  // lagged echo of yourself just adds unnecessary seeks and rate wobble to
+  // a solo listen — the same "heavy while alone" bug found and fixed in
+  // sync-lis's extension (content.js's reconcile()).
+  if (!state.members || state.members.length <= 1) { audio.playbackRate = 1; return; }
   const d = audio.currentTime - targetTime();
   if (Math.abs(d) > 0.4) {
     audio.currentTime = targetTime();

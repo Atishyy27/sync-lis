@@ -24,7 +24,7 @@ if (!fs.existsSync(CLIP)) {
     "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-shortest", CLIP,
   ], { stdio: "ignore" });
 }
-const RELAY = "https://localhost:7777";
+const RELAY = process.env.SYNC_TEST_RELAY || "https://localhost:7777";
 const HEADED = process.argv.includes("--headed");
 const PORT = 8899;
 

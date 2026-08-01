@@ -7,6 +7,7 @@ const path = require("path");
 const suites = [
   ["adapters: per-site identity", "adapters.js", []],
   ["spotify: buffering-noise vs real drift", "spotify-jitter.js", []],
+  ["youtube: ad-end does not restart the room at 0", "youtube-ad.js", []],
   ["panel: on-page rendering + responsiveness", "panel-widths.js", []],
   ["popup: boot and create flow", "popup-boot.js", []],
   ["protocol: jukebox", "smoke-jukebox.js", [path.join(__dirname, "fixture", "tone.m4a")]],

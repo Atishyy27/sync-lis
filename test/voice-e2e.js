@@ -19,7 +19,7 @@ const { chromium } = require("playwright");
 
 const EXT = path.join(__dirname, "..", "extension");
 const FIXTURE = path.join(__dirname, "fixture");
-const RELAY = "https://localhost:7777";
+const RELAY = process.env.SYNC_TEST_RELAY || "https://localhost:7777";
 const PORT = 8901;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 

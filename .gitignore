@@ -1,5 +1,8 @@
 node_modules/
 
+# local wrangler dev state (sqlite DO storage, bundled temp files)
+.wrangler/
+
 # the server's self-signed TLS keypair — never leaves this machine
 .cert/
 

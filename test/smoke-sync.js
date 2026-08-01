@@ -8,9 +8,12 @@ const check = (name, cond) => {
   if (!cond) process.exitCode = 1;
 };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// overridable so the same suite can prove protocol parity against the
+// Cloudflare Workers port of this relay (worker/), not just server.js
+const RELAY_URL = process.env.SYNC_TEST_RELAY || "wss://localhost:7777";
 
 function client(name) {
-  const ws = new WebSocket("wss://localhost:7777", { rejectUnauthorized: false });
+  const ws = new WebSocket(RELAY_URL, { rejectUnauthorized: false });
   const c = { name, ws, msgs: [], joined: null, state: null, members: [] };
   ws.on("message", (raw) => {
     const m = JSON.parse(raw);

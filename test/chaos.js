@@ -11,6 +11,10 @@ const HOST = "localhost:7777";
 const ROOM = `chaos${N}`;
 const ACTION_MS = 15000;
 
+// only the sync-lis client is overridable — mehfil's jukebox (jamClient)
+// isn't part of the Workers migration and always talks to server.js
+const SYNC_RELAY_URL = process.env.SYNC_TEST_RELAY || `wss://${HOST}`;
+
 const violations = [];
 const bug = (msg) => violations.push(msg);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -69,7 +73,7 @@ function jamClient(name) {
 
 function syncClient(name, code) {
   const c = { name, state: null, joined: null, alive: true };
-  c.ws = new WebSocket(`wss://${HOST}`, { rejectUnauthorized: false });
+  c.ws = new WebSocket(SYNC_RELAY_URL, { rejectUnauthorized: false });
   c.ws.on("message", (raw) => {
     const m = JSON.parse(raw);
     if (m.type === "syncJoined") c.joined = m;

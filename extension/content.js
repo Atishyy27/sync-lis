@@ -360,6 +360,8 @@
   let lastObserved = null;   // where the player was last time we looked
   let lastObservedAt = 0;
   let overToleranceSince = 0; // debounce for hard-seek-only sources (see reconcile)
+  let wasAd = false;    // was an ad showing the last time sendCmd looked?
+  let adEndedAt = 0;    // when isAd() was last seen flip from true to false
 
   const ui = window.__syncLisUI;
 
@@ -489,7 +491,19 @@
   const counts = { play: 0, pause: 0, seeked: 0, sent: 0, dropped: 0, err: null };
 
   function sendCmd(action) {
-    if (reconciling || !port || adapter.isAd()) { counts.dropped++; return; }
+    // YouTube plays an ad inside the SAME <video> element as the real
+    // content (see isAd()'s comment). The instant the ad ends, that element
+    // is mid-transition back to the resumed position — for a beat, isAd()
+    // already reads false while currentTime is still wherever the ad left
+    // it (often ~0, as the source reloads). A play/seeked event landing in
+    // that exact gap used to broadcast that bogus near-zero position as the
+    // room's new state, dragging everyone — including the ad-watcher's own
+    // video once it actually resumed — back to the start. Held off for a
+    // beat after isAd() is observed flipping false, the same way a seek the
+    // user just started is held off in reconcile().
+    if (adapter.isAd()) { wasAd = true; counts.dropped++; return; }
+    if (wasAd) { wasAd = false; adEndedAt = Date.now(); }
+    if (reconciling || !port || Date.now() - adEndedAt < 1500) { counts.dropped++; return; }
     // Never speak for content the room hasn't confirmed yet. If the page has
     // already moved to a new track but the room still shows the old one, a
     // position read right now belongs to nothing the room recognises — this
