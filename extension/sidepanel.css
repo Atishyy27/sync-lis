@@ -9,22 +9,23 @@
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
-  /* neutral with a faint cool bias so it never competes with the picture */
-  --ink: #08090b;
-  --panel: #0e1013;
-  --raise: #14171c;
-  --rule: #1a1d22;
-  --text: #e9ebee;
-  --mute: #878d96;
-  --faint: #4e545c;
+  /* warm near-black: the first palette, kept, because it reads as a room
+     rather than a console and still sits quietly beside a picture */
+  --ink: #141210;
+  --panel: #1c1916;
+  --raise: #242019;
+  --rule: #2a2620;
+  --text: #ece7df;
+  --mute: #9a9184;
+  --faint: #6b6357;
 
   /* the accent, spent in one place */
-  --iris: #8b8cff;
+  --iris: #ffb454;
 
   /* state, deliberately separate from the accent */
-  --together: #63c89b;
-  --waiting: #d9a143;
-  --gone: #4e545c;
+  --together: #7dd8a6;
+  --waiting: #e2614f;
+  --gone: #6b6357;
 
   --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
@@ -263,8 +264,10 @@ button { cursor: pointer; }
 /* ---------- the front door ---------- */
 
 .door { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 24px 18px; gap: 12px; }
-.door .mark { font-size: 17px; font-weight: 300; letter-spacing: -0.3px; }
-.door .mark b { font-weight: 600; }
+/* the wordmark, with the punctuation doing the work */
+.mark { font-size: 26px; font-weight: 300; letter-spacing: -1px; }
+.mark b { font-weight: 600; }
+.mark::after { content: "."; color: var(--iris); }
 .door p { color: var(--mute); font-size: 12px; line-height: 1.6; }
 .door input {
   padding: 9px 11px; background: var(--panel);
@@ -282,6 +285,61 @@ button { cursor: pointer; }
 }
 .door .or::before, .door .or::after { content: ""; flex: 1; height: 1px; background: var(--rule); }
 .err { color: var(--waiting); font-size: 11.5px; }
+
+/* ---------- the room bar: invite always in reach ---------- */
+
+.roombar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 16px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--panel);
+}
+.roombar .mark { font-size: 14px; letter-spacing: -0.4px; flex: none; }
+.roombar .link {
+  flex: 1; min-width: 0;
+  font-family: var(--mono); font-size: 10px;
+  color: var(--iris);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  background: none; border: none; text-align: left;
+}
+.roombar .copy, .roombar .cog {
+  flex: none; padding: 4px 8px; font-size: 10.5px;
+  color: var(--mute); border: 1px solid var(--rule); border-radius: 3px;
+}
+.roombar .copy:hover, .roombar .cog:hover { color: var(--text); border-color: var(--faint); }
+
+/* ---------- the jam: a running order ---------- */
+
+.jam { border-top: 1px solid var(--rule); }
+.jam-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px 8px;
+}
+.jam-head .eyebrow { flex: 1; }
+.jam-add { display: flex; gap: 6px; padding: 0 16px 10px; }
+.jam-add input {
+  flex: 1; min-width: 0; padding: 7px 9px;
+  background: var(--panel); border: 1px solid var(--rule); border-radius: 3px;
+}
+.jam-add button { padding: 7px 11px; border: 1px solid var(--rule); border-radius: 3px; color: var(--mute); font-size: 11px; }
+.jam-add button:hover { color: var(--text); }
+.qlist { list-style: none; max-height: 30vh; overflow-y: auto; padding: 0 16px 10px; }
+.qlist li {
+  display: flex; align-items: baseline; gap: 8px;
+  padding: 6px 0; border-bottom: 1px solid var(--rule); font-size: 11.5px;
+}
+.qlist li:last-child { border-bottom: none; }
+.qlist .qn { font-family: var(--mono); font-size: 10px; color: var(--faint); font-variant-numeric: tabular-nums; }
+.qlist .qt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qlist .qby { color: var(--faint); font-size: 10px; }
+.qlist .qx { color: var(--faint); font-size: 13px; padding: 0 2px; line-height: 1; }
+.qlist .qx:hover { color: var(--waiting); }
+.qempty { color: var(--faint); font-size: 11px; padding: 0 16px 10px; }
+
+/* emoji, always in reach, never behind a menu */
+.quick { display: flex; gap: 2px; padding: 8px 12px 0; flex-wrap: wrap; }
+.quick button { padding: 3px 5px; font-size: 16px; line-height: 1; border-radius: 3px; }
+.quick button:hover { background: var(--raise); }
 
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-thumb { background: var(--rule); }

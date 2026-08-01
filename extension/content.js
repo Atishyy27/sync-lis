@@ -493,6 +493,10 @@
     counts.seeked++;
     if (state && Math.abs(adapter.getTime() - expectedTime()) > 0.75) sendCmd("seek");
   };
+  // reaching the end moves the jam along to the next pick
+  const onEnded = () => {
+    if (state && content) tell({ type: "ended", key: content.key });
+  };
   const onWaiting = () => setHold(true);
   const onResumeable = () => setHold(false);
   // A seek the user just started is the truth, not drift to be corrected.
@@ -521,6 +525,7 @@
       watched.removeEventListener("seeked", onSeeked);
       watched.removeEventListener("seeking", onSeeking);
       watched.removeEventListener("ratechange", onRateChange);
+      watched.removeEventListener("ended", onEnded);
       watched.removeEventListener("waiting", onWaiting);
       watched.removeEventListener("playing", onResumeable);
       watched.removeEventListener("canplaythrough", onResumeable);
@@ -533,6 +538,7 @@
       v.addEventListener("seeked", onSeeked);
       v.addEventListener("seeking", onSeeking);
       v.addEventListener("ratechange", onRateChange);
+      v.addEventListener("ended", onEnded);
       v.addEventListener("waiting", onWaiting);
       v.addEventListener("playing", onResumeable);
       v.addEventListener("canplaythrough", onResumeable);
@@ -675,5 +681,6 @@
 
   connect();
 })();
+
 
 

@@ -9,6 +9,7 @@ const suites = [
   ["protocol: jukebox", "smoke-jukebox.js", [path.join(__dirname, "fixture", "tone.m4a")]],
   ["protocol: sync rooms", "smoke-sync.js", []],
   ["protocol: co-watching", "smoke-cowatch.js", []],
+  ["room: ten people", "ten-people.js", []],
   ["chaos: 5 users", "chaos.js", ["5", path.join(__dirname, "fixture", "tone.m4a")]],
   ["browser: end to end", "e2e.js", []],
   ["browser: live sites", "live-sites.js", []],

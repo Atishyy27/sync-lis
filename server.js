@@ -454,6 +454,41 @@ function said(sr, text) {
   syncSend(sr, { type: "syncSaid", text, at: Date.now() });
 }
 
+// A pasted link, named as well as we can without fetching anything. The real
+// title arrives later, from whoever's player actually lands on it.
+function labelFor(url) {
+  try {
+    const u = new URL(url);
+    const host = u.hostname.replace(/^www\./, "").replace(/\.com$|\.be$/, "");
+    const id = new URLSearchParams(u.search).get("v")
+      || u.pathname.split("/").filter(Boolean).pop()
+      || "";
+    return `${host}${id ? ` · ${id.slice(0, 22)}` : ""}`;
+  } catch {
+    return url.slice(0, 40);
+  }
+}
+
+// Move the room onto the next thing in the running order.
+function playNext(sr, byName) {
+  const next = sr.queue.shift();
+  if (!next) {
+    said(sr, "that was the last one");
+    return syncBroadcast(sr);
+  }
+  sr.content = { key: next.key || next.url, url: next.url, title: next.title, kind: next.kind || "generic" };
+  sr.contentAt = Date.now();
+  armArrivalGrace(sr);
+  for (const m of sr.members.values()) m.arrivedKey = null;
+  sr.state = { paused: true, time: 0, at: Date.now(), rate: sr.state.rate || 1 };
+  sr.heldPlaying = true; // start together once everyone has landed on it
+  syncSend(sr, {
+    type: "syncNarrate",
+    text: `${next.title} — ${next.byName}'s pick${byName ? `, skipped by ${byName}` : ""}`,
+  });
+  syncBroadcast(sr);
+}
+
 function syncBroadcast(sr) {
   clearTimeout(sr.coalesce);
   sr.coalesce = null;
@@ -464,6 +499,7 @@ function syncBroadcast(sr) {
     content: sr.content,
     hostId: sr.hostId,
     locked: sr.locked,
+    queue: sr.queue,
     lastAction: sr.lastAction,
     countdownAt: sr.countdownAt,
     members: [...sr.members.values()].map((m) => ({
@@ -485,8 +521,25 @@ function syncBroadcastSoon(sr) {
 // moved to something new and they have not landed on it yet. Treating arrival
 // as just another reason to wait is what removes the "ghost seconds" where one
 // side is still playing the old thing.
+// Waiting for someone to land on the new track is right, but it cannot be
+// unbounded: a tab we are not allowed to script never reports arriving, and
+// one of those would freeze the room for everybody, forever.
+const ARRIVAL_GRACE_MS = 20000;
+
 function isHolding(m, sr) {
-  return m.holding || (sr.content && m.arrivedKey !== sr.content.key);
+  if (m.holding) return true;
+  if (!sr.content || m.arrivedKey === sr.content.key) return false;
+  return Date.now() - (sr.contentAt || 0) < ARRIVAL_GRACE_MS;
+}
+
+// the grace period expiring has to wake the room by itself
+function armArrivalGrace(sr) {
+  clearTimeout(sr.graceTimer);
+  sr.graceTimer = setTimeout(() => {
+    if (!syncRooms.has(sr.code)) return;
+    applyHolds(sr);
+    syncBroadcast(sr);
+  }, ARRIVAL_GRACE_MS + 200);
 }
 
 // "Wait for me": while anyone holds, the room pauses, and it resumes by itself
@@ -573,6 +626,11 @@ wss.on("connection", (ws) => {
           hostId: null,      // whoever opened the room
           locked: false,     // host-only control
           history: [],       // so reopening the panel doesn't lose the chat
+          // The jam: everyone drops links, they play one after another on each
+          // person's own account. Nothing is fetched or hosted here, so the
+          // queue is just a running order.
+          queue: [],
+          qid: 1,
           heldPlaying: false,
           lastAction: null,
           countdownAt: null,
@@ -648,6 +706,55 @@ wss.on("connection", (ws) => {
           if (text) syncSend(sr, { type: "syncSecret", text, from: me.name });
           return;
         }
+        // ---- the jam: a shared running order ----
+        case "syncQueueAdd": {
+          const url = String(msg.url || "").trim().slice(0, 500);
+          if (!/^https?:\/\//.test(url)) {
+            return ws.send(JSON.stringify({ type: "syncNote", text: "that doesn't look like a link" }));
+          }
+          if (sr.queue.length >= 100) {
+            return ws.send(JSON.stringify({ type: "syncNote", text: "the queue is full" }));
+          }
+          const entry = {
+            id: sr.qid++,
+            url,
+            key: String(msg.key || "").slice(0, 200) || url,
+            title: String(msg.title || "").slice(0, 120) || labelFor(url),
+            kind: String(msg.kind || "generic").slice(0, 16),
+            byId: me.id,
+            byName: me.name,
+          };
+          sr.queue.push(entry);
+          said(sr, `${me.name} queued ${entry.title}`);
+          // an empty room starts straight away rather than waiting to be told
+          if (!sr.content) return playNext(sr);
+          return syncBroadcast(sr);
+        }
+        case "syncQueueRemove": {
+          const i = sr.queue.findIndex((q) => q.id === msg.id);
+          if (i === -1) return;
+          // your own picks are yours to pull; anyone can prune once it is theirs
+          if (sr.queue[i].byId !== me.id && sr.hostId !== me.id) return;
+          sr.queue.splice(i, 1);
+          return syncBroadcast(sr);
+        }
+        case "syncQueueNext": {
+          if (sr.locked && me.id !== sr.hostId) {
+            ws.send(JSON.stringify({ type: "syncNote", text: "controls are locked by the host" }));
+            return syncBroadcast(sr);
+          }
+          return playNext(sr, me.name);
+        }
+        // whoever's player reaches the end moves the room along
+        case "syncEnded": {
+          const key = String(msg.key || "");
+          if (!sr.content || key !== sr.content.key) return;
+          // Everyone's player finishes, so ignore repeats of the SAME track.
+          // A time window would also swallow the next track's honest ending.
+          if (sr.endedKey === key) return;
+          sr.endedKey = key;
+          return playNext(sr);
+        }
         case "syncAway": {
           const away = !!msg.away;
           if (away === me.away) return;
@@ -717,16 +824,27 @@ wss.on("connection", (ws) => {
 
       // already the room's content: this is someone arriving on it
       if (syncRoom.content && syncRoom.content.key === key) {
+        let changed = false;
         if (syncMe.arrivedKey !== key) {
           syncMe.arrivedKey = key;
           applyHolds(syncRoom);
-          syncBroadcast(syncRoom);
+          changed = true;
         }
+        // a queued link only had a guess at its name; the player knows the real
+        // one, so the first person to land on it fills it in for everyone
+        const real = String(msg.title || "").slice(0, 200);
+        if (real && real !== syncRoom.content.title && !/^https?:\/\/| · /.test(real)) {
+          syncRoom.content.title = real;
+          changed = true;
+        }
+        if (changed) syncBroadcast(syncRoom);
         return;
       }
 
       const title = String(msg.title || "").slice(0, 200);
       syncRoom.content = { key, url, title, kind: String(msg.kind || "generic").slice(0, 16) };
+      syncRoom.contentAt = Date.now();
+      armArrivalGrace(syncRoom);
       // everyone has to land on the new thing before anything plays
       for (const m of syncRoom.members.values()) m.arrivedKey = null;
       syncMe.arrivedKey = key;
@@ -946,5 +1064,6 @@ wss.on("connection", (ws) => {
     console.log(`  (Windows firewall: Allow on PRIVATE networks on first run)\n`);
   });
 })();
+
 
 

@@ -116,6 +116,40 @@ process.on("exit", () => {
   check("play is scheduled, not immediate", him.room.state.paused === false && him.room.state.at === him.room.countdownAt);
   check("ready flags reset after firing", him.room.members.every((m) => !m.ready));
 
+  // the jam: a shared running order that plays itself
+  her.send({ type: "syncQueueAdd", url: "https://www.youtube.com/watch?v=aaa", key: "yt:aaa", title: "her pick one", kind: "youtube" });
+  await sleep(300);
+  check("a queued link starts playing when nothing is on", her.room.content && her.room.content.key === "yt:aaa");
+  him.send({ type: "syncQueueAdd", url: "https://www.youtube.com/watch?v=bbb", key: "yt:bbb", title: "his pick", kind: "youtube" });
+  her.send({ type: "syncQueueAdd", url: "https://www.youtube.com/watch?v=ccc", key: "yt:ccc", title: "her pick two", kind: "youtube" });
+  await sleep(400);
+  check("both people's picks sit in one order", him.room.queue.length === 2 && him.room.queue[0].byName === "him");
+  check("everyone sees who added what", him.room.queue[0].title === "his pick");
+
+  // reaching the end moves it along by itself
+  him.send({ type: "syncEnded", key: "yt:aaa" });
+  await sleep(400);
+  check("finishing a track plays the next one", her.room.content.key === "yt:bbb");
+  check("the played entry leaves the queue", her.room.queue.length === 1);
+  check("a new track starts held at zero", her.room.state.time === 0 && her.room.state.paused === true);
+
+  // one advance per ending, not one per person
+  her.send({ type: "syncEnded", key: "yt:bbb" });
+  him.send({ type: "syncEnded", key: "yt:bbb" });
+  await sleep(400);
+  check("two people finishing does not skip two tracks", her.room.content.key === "yt:ccc");
+
+  // skipping, and removing your own pick
+  her.send({ type: "syncQueueAdd", url: "https://www.youtube.com/watch?v=ddd", key: "yt:ddd", title: "spare", kind: "youtube" });
+  await sleep(300);
+  const spare = her.room.queue.find((x) => x.title === "spare");
+  him.send({ type: "syncQueueRemove", id: spare.id });
+  await sleep(300);
+  check("someone else cannot pull your pick", her.room.queue.some((x) => x.id === spare.id));
+  her.send({ type: "syncQueueRemove", id: spare.id });
+  await sleep(300);
+  check("you can pull your own pick", !her.room.queue.some((x) => x.id === spare.id));
+
   // identity is changeable after joining: link-joiners arrive unnamed
   him.send({ type: "syncIdentity", name: "Aditi", avatar: "🍿" });
   await sleep(300);

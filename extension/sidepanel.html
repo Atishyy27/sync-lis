@@ -9,6 +9,7 @@
   <!-- before a room exists -->
   <section id="door" class="door">
     <div class="mark">sync&#8209;<b>lis</b></div>
+    <div id="joining" class="hidden err" style="color:var(--mute)">joining the room…</div>
     <p>Open what you want to watch in this tab, then start a room and send the link. Whatever you play, they play.</p>
     <input id="nameInput" type="text" maxlength="24" placeholder="your name" autocomplete="off" />
     <button id="createBtn" class="go">Start a room</button>
@@ -20,6 +21,13 @@
 
   <!-- the room -->
   <main id="live" class="hidden">
+    <div class="roombar">
+      <span class="mark">sync&#8209;<b>lis</b></span>
+      <button id="linkBtn" class="link" title="click to copy">…</button>
+      <button id="copyBtn" class="copy">Copy</button>
+      <button id="cogBtn" class="cog">···</button>
+    </div>
+
     <section class="state">
       <div id="stateLine" class="state-line">nothing playing</div>
       <div id="stateWhy" class="state-why"></div>
@@ -37,10 +45,24 @@
 
     <section id="people" class="people"></section>
 
+    <section class="jam">
+      <div class="jam-head">
+        <span class="eyebrow">up next</span>
+        <button id="nextBtn" class="chip">Skip</button>
+      </div>
+      <div class="jam-add">
+        <input id="qUrl" type="text" placeholder="paste a link — youtube, spotify, anything" autocomplete="off" />
+        <button id="qAdd">Add</button>
+      </div>
+      <ul id="qlist" class="qlist"></ul>
+      <p id="qempty" class="qempty">Drop a few links. They play one after another, on each of your own accounts.</p>
+    </section>
+
     <div id="stream" class="stream"></div>
     <div id="typing" class="typing"></div>
 
     <div class="composer">
+      <div id="quick" class="quick"></div>
       <div class="field">
         <input id="msg" type="text" maxlength="500" placeholder="say something" autocomplete="off" />
         <button id="more" title="more">+</button>

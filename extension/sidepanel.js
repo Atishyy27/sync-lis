@@ -193,6 +193,24 @@ function render() {
     box.appendChild(el);
   }
 
+  // --- the running order ---
+  const q = r.queue || [];
+  $("linkBtn").textContent = `${(r.server || RELAY).replace(/^https?:\/\//, "")}/r/${r.code}`;
+  $("qempty").classList.toggle("hidden", q.length > 0);
+  const ql = $("qlist");
+  ql.innerHTML = "";
+  q.forEach((item, i) => {
+    const li = document.createElement("li");
+    li.innerHTML = `<span class="qn"></span><span class="qt"></span><span class="qby"></span>` +
+      (item.byId === r.meId || r.hostId === r.meId ? `<button class="qx" title="remove">×</button>` : "");
+    li.querySelector(".qn").textContent = String(i + 1).padStart(2, "0");
+    li.querySelector(".qt").textContent = item.title;
+    li.querySelector(".qby").textContent = item.byId === r.meId ? "you" : item.byName;
+    const x = li.querySelector(".qx");
+    if (x) x.onclick = () => tell({ type: "queueRemove", id: item.id });
+    ql.appendChild(li);
+  });
+
   $("readyBtn").classList.toggle("on", !!(me && me.ready));
   $("lockBtn").classList.toggle("on", !!r.locked);
   $("lockBtn").textContent = r.locked ? "Controls locked" : "Lock controls";
@@ -302,6 +320,38 @@ const secretPane = (d) => {
 };
 
 $("more").addEventListener("click", () => drawer("menu", menu));
+
+// the emoji you actually use, always one tap away, never behind a menu
+const QUICK = ["😂", "❤️", "🔥", "😭", "💀", "👀", "🎉", "🫠"];
+(() => {
+  const box = $("quick");
+  for (const e of QUICK) {
+    const b = document.createElement("button");
+    b.textContent = e;
+    b.title = "tap to type, hold to send big";
+    b.onclick = () => { $("msg").value += e; $("msg").focus(); };
+    let held = null;
+    b.onpointerdown = () => { held = setTimeout(() => { tell({ type: "big", emoji: e }); held = "sent"; }, 450); };
+    b.onpointerup = () => { if (held && held !== "sent") clearTimeout(held); if (held === "sent") { held = null; } };
+    box.appendChild(b);
+  }
+})();
+
+// the jam
+const addLink = () => {
+  const url = $("qUrl").value.trim();
+  if (!/^https?:\/\/\S+$/.test(url)) return;
+  tell({ type: "queueAdd", url });
+  $("qUrl").value = "";
+};
+$("qAdd").addEventListener("click", addLink);
+$("qUrl").addEventListener("keydown", (e) => { if (e.key === "Enter") addLink(); });
+$("nextBtn").addEventListener("click", () => tell({ type: "queueNext" }));
+$("linkBtn").addEventListener("click", () => {
+  const r = snap && snap.room;
+  if (r) navigator.clipboard.writeText(`${r.server || RELAY}/r/${r.code}`).then(() => did("link copied"));
+});
+$("cogBtn").addEventListener("click", () => $("sheet").classList.remove("hidden"));
 
 // ---------- actions ----------
 
