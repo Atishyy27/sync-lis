@@ -70,7 +70,7 @@ $("showBtn").addEventListener("click", async () => {
   window.close();
 });
 
-const RELAY = "https://desktop-ch7a7q7.tail5847e5.ts.net";
+const RELAY = "https://sync-lis-relay.sync-lis-relay.workers.dev";
 
 (async () => {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });

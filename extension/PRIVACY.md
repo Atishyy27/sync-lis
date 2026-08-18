@@ -21,9 +21,9 @@ video/audio player) and a shared clock keeps everyone at the same timestamp.
   signaling) goes directly to the relay server configured for the room you're
   in — a small, self-hostable Node.js server anyone can run.
 - **The extension ships with one default relay, operated by the developer**,
-  unless the room was started against a different one. Its address is not
-  published here since it identifies a specific server; this default is
-  expected to move to a managed cloud relay before wide release.
+  unless the room was started against a different one. It runs on Cloudflare
+  Workers and holds room state only in memory for the life of the room. It is
+  not a personal machine and keeps no logs of who joined what.
 - **Voice is peer-to-peer (WebRTC).** Audio itself never touches the relay
   server at all — only the connection setup (who's calling whom) does. Voice
   is never recorded or stored anywhere.

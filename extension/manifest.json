@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "sync-lis",
-  "version": "1.0.0",
-  "description": "Watch and listen together, anywhere. Share one room link — what they play, you play, at the same timestamp. YouTube, Spotify, Netflix and more.",
+  "version": "1.0.2",
+  "description": "Watch and listen together, anywhere. What they play, you play, at the same timestamp. YouTube, Spotify, Netflix and more.",
   "permissions": [
     "tabs",
     "scripting",
