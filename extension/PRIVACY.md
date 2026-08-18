@@ -19,13 +19,11 @@ video/audio player) and a shared clock keeps everyone at the same timestamp.
 - **Nothing goes through sync-lis's developer or any third party.** Sync
   traffic (what's playing, playback position, chat messages, reactions, voice
   signaling) goes directly to the relay server configured for the room you're
-  in — a small, self-hostable Node.js server anyone can run
-  (see the [mehfil repo](https://github.com/Atishyy27/sync-lis) `server.js`).
-- **The extension currently defaults to one specific relay
-  (`desktop-ch7a7q7.tail5847e5.ts.net`), reachable via the developer's own
-  Tailscale Funnel**, unless the room was started against a different one.
-  That default is expected to change before wide release — see the open
-  question below.
+  in — a small, self-hostable Node.js server anyone can run.
+- **The extension ships with one default relay, operated by the developer**,
+  unless the room was started against a different one. Its address is not
+  published here since it identifies a specific server; this default is
+  expected to move to a managed cloud relay before wide release.
 - **Voice is peer-to-peer (WebRTC).** Audio itself never touches the relay
   server at all — only the connection setup (who's calling whom) does. Voice
   is never recorded or stored anywhere.
@@ -45,4 +43,5 @@ video/audio player) and a shared clock keeps everyone at the same timestamp.
 
 ## Contact
 
-Questions: open an issue on the repository above.
+Questions: reach the developer via the contact link on the Chrome Web Store
+listing this policy is attached to.
