@@ -56,5 +56,45 @@ into `manifest.json` — the manifest only needs the (already-correct)
 
 ## Privacy policy URL
 
-Point this at wherever `PRIVACY.md` (same folder) ends up hosted publicly —
-not decided yet, see the open question raised alongside this file.
+**https://gist.github.com/Atishyy27/f805d8131a13c92a1001a43338c98926**
+
+A public gist of `PRIVACY.md`. The dashboard's Privacy tab takes a *link*, not
+pasted text ("Add a link to the privacy policy for your extension"), and the
+repo is private, so the gist is what makes the policy publicly resolvable.
+Re-publish the gist whenever `extension/PRIVACY.md` changes: the docs treat a
+mismatch between the dashboard disclosures, the policy, and actual behaviour as
+a policy violation.
+
+
+## Graphic assets — all built, in `dist/cws/`
+
+Regenerate with `node tools/_cws-screenshots.js <outdir>` (real extension, two
+real browsers, a real room) and `node tools/_cws-promo.js <outdir>`.
+
+| Asset | File | Spec | Required |
+|---|---|---|---|
+| Store icon | `store-icon-128.png` | 128x128 canvas, 96x96 artwork, transparent padding | yes |
+| Screenshot 1 | `screenshot-1-together.png` | 1280x800 | yes (1-5) |
+| Screenshot 2 | `screenshot-2-other-side.png` | 1280x800 | yes |
+| Small promo tile | `promo-small-440x280.png` | 440x280 | yes |
+| Marquee promo tile | `promo-marquee-1400x560.png` | 1400x560 | no |
+| Package | `sync-lis-v1.0.0.zip` | manifest at zip root | yes |
+
+The in-extension icons (`extension/icons/`) are full-bleed by design; only the
+*store* icon carries the 16px padding the listing spec asks for.
+
+## Detailed description
+
+In `dist/cws/detailed-description.txt`.
+
+## Category
+
+Categories moved from 11 to 17, grouped under Productivity / Lifestyle / Make
+Chrome Yours. Pick from the live dropdown at submission time rather than
+trusting a name written down here — the exact labels are not reliably
+documented outside the dashboard. Lifestyle is the right group for this.
+
+## Still blocked on you
+
+- **$5 one-time developer registration.** Nothing can be submitted without it.
+- The listing needs a **contact email verified** on the developer account.
