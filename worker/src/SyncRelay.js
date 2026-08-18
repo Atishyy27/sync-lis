@@ -97,6 +97,7 @@ export class SyncRelay extends DurableObject {
   async fetch(request) {
     const url = new URL(request.url);
     if (url.pathname === "/stats") return this.statsResponse();
+    if (url.pathname.startsWith("/r/")) return this.roomLinkResponse(url.pathname.slice(3));
     const pair = new WebSocketPair();
     const [client, server] = Object.values(pair);
     this.ctx.acceptWebSocket(server);
@@ -119,6 +120,43 @@ export class SyncRelay extends DurableObject {
     return new Response(JSON.stringify({ activeUsers: users, activeRooms: rooms.size, at: Date.now() }), {
       headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
     });
+  }
+
+  // The page someone lands on when they click a share link. Ported from
+  // server.js's serveRoomLink: without it the relay speaks WebSocket only and
+  // every room link 404s, which is the one thing that kept the extension
+  // pointed at the Node server instead of here.
+  async roomLinkResponse(rawCode) {
+    const code = rawCode.replace(/[^A-Za-z0-9]/g, "").toUpperCase().slice(0, 5);
+    const sr = await this.getRoom(code);
+    // presence comes from live sockets, not stored membersMeta, so a room
+    // nobody is currently connected to doesn't claim to have people in it
+    const inside = sr ? this.socketsInRoom(code).length : 0;
+    const esc = (t) => String(t).replace(/[&<>"']/g, (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+    const body = `<!DOCTYPE html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>sync-lis room ${esc(code)}</title>
+<style>
+  body{background:#141210;color:#ece7df;font-family:"Segoe UI",system-ui,sans-serif;
+       min-height:100vh;display:flex;align-items:center;justify-content:center;margin:0}
+  .c{max-width:380px;padding:24px;text-align:center}
+  h1{font-size:34px;font-weight:750;letter-spacing:-1px;margin:0}
+  h1::after{content:".";color:#ffb454}
+  .code{font-size:40px;font-weight:750;letter-spacing:8px;color:#ffb454;margin:18px 0 6px}
+  p{color:#9a9184;line-height:1.55;margin:10px 0}
+  .now{color:#ece7df}
+</style></head><body><div class="c">
+<h1>sync-lis</h1>
+<div class="code">${esc(code)}</div>
+${sr
+  ? `<p>Room is live${inside ? ` &middot; ${inside} inside` : ""}.</p>
+     ${sr.content ? `<p class="now">Playing: ${esc(sr.content.title || sr.content.url || "")}</p>` : ""}
+     <p>With sync-lis installed, this tab joins automatically and jumps to what's playing. Nothing happening? Open the extension and enter the code.</p>`
+  : `<p>That room isn't live right now.</p>`}
+</div></body></html>`;
+    return new Response(body, { headers: { "Content-Type": "text/html; charset=utf-8" } });
   }
 
   // ---------- room storage ----------

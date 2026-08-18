@@ -16,6 +16,9 @@ export default {
     // routed through the same singleton DO so it reads real connections,
     // not a separate count that could drift from reality.
     if (url.pathname === "/stats") return stub.fetch(request);
+    // /r/<code>: the page a share link opens. Same singleton DO, so the page
+    // reports the room's real state rather than a guess.
+    if (url.pathname.startsWith("/r/")) return stub.fetch(request);
     if (request.headers.get("Upgrade") !== "websocket") {
       return new Response("sync-lis relay: expects a WebSocket connection (or GET /stats)", { status: 426 });
     }
