@@ -17,3 +17,6 @@ test/fixture/*.m4a
 
 # packaged extension zips, rebuilt by CI on every tag
 dist/
+
+# meant to stay local (session handoff notes) — was accidentally tracked
+SESSION-CONTEXT.local.md
