@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <rect width="128" height="128" rx="28" fill="#161310"/>
+  <!-- the progress ring: one shared timeline, sage because that is the colour
+       the panel already uses for "in sync" -->
+  <path d="M 64 20 A 44 44 0 1 1 30.3 35.7" fill="none" stroke="#7dd8a6"
+        stroke-width="10" stroke-linecap="round"/>
+  <!-- the playhead, sitting exactly on the ring: both people, one timestamp -->
+  <circle cx="64" cy="20" r="9" fill="#ffb454"/>
+  <!-- the accent dot from the wordmark, oversized as the hero -->
+  <circle cx="64" cy="64" r="18" fill="#ffb454"/>
+</svg>
