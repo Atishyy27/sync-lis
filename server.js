@@ -51,6 +51,10 @@ async function loadCert() {
 // ---------- rooms ----------
 
 let nextId = 1;
+
+// so a run of [jukebox] lines actually shows spacing/periodicity, not just order
+const ts = () => new Date().toISOString().slice(11, 23);
+const jlog = (...args) => console.log(`[${ts()}]`, ...args);
 let nextEntryId = 1;
 const rooms = new Map();
 
@@ -127,7 +131,7 @@ class Room {
       this.current.pausedAt = Date.now();
       this.heldPlaying = true;
       clearTimeout(this.advanceTimer);
-      console.log(`[jukebox] room "${this.name}" held for buffering: ${holders.map((m) => m.name).join(", ")}`);
+      jlog(`[jukebox] room "${this.name}" held for buffering: ${holders.map((m) => m.name).join(", ")}`);
       this.broadcastState();
     } else if (!holders.length && this.heldPlaying && this.current.pausedAt) {
       const heldMs = Date.now() - this.current.pausedAt;
@@ -135,7 +139,7 @@ class Room {
       this.current.pausedAt = null;
       this.heldPlaying = false;
       this.armAdvance();
-      console.log(`[jukebox] room "${this.name}" resumed after ${heldMs}ms held`);
+      jlog(`[jukebox] room "${this.name}" resumed after ${heldMs}ms held`);
       this.broadcastState();
     }
   }
@@ -198,7 +202,7 @@ class Room {
   failEntry(entry, err, context) {
     entry.status = "error";
     entry.error = String(err.message || err).slice(0, 200);
-    console.error(`[jukebox] ${context} failed: ${entry.error}`);
+    jlog(`[jukebox] ${context} failed: ${entry.error}`);
     this.broadcast({ type: "toast", text: `Couldn't fetch "${entry.title}" â€” ${entry.error}` });
     setTimeout(() => {
       const i = this.queue.indexOf(entry);
@@ -1014,7 +1018,7 @@ wss.on("connection", (ws) => {
         // a monitorable trail for "why is this room stuck buffering" —
         // rapid alternating true/false from the same name is the signature
         // of a client-side hold/seek feedback loop, not a real network stall
-        console.log(`[jukebox] ${me.name} holding=${h}`);
+        jlog(`[jukebox] ${me.name} holding=${h}`);
         room.applyHolds();
         room.broadcastState();
         break;
