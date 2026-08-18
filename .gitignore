@@ -14,3 +14,6 @@ test/fixture/*.m4a
 # local scratch
 *.log
 .DS_Store
+
+# packaged extension zips, rebuilt by CI on every tag
+dist/
