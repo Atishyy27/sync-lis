@@ -149,8 +149,10 @@ how well they fit:
    own on Cloudflare.
 3. **Cloudflare Workers + Durable Objects** — free tier covers a relay this
    small, and WebSocket Hibernation means idle rooms cost nothing. This is the
-   only option where sync-lis keeps working with your machine off, but the relay
-   has to be rewritten as a Durable Object.
+   only option where sync-lis keeps working with your machine off. The relay is
+   already rewritten as a Durable Object (`worker/`, ported in `8365768`) and
+   passes locally under `wrangler dev` — it just isn't deployed yet, since that
+   needs an interactive `wrangler login` (OAuth) followed by `wrangler deploy`.
 
 **Why mehfil can't just be hosted somewhere:** YouTube blocks *fetching* from
 datacenter IPs by reputation — the "Sign in to confirm you're not a bot" wall —
