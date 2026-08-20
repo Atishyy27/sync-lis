@@ -73,6 +73,20 @@ function applyHolds(sr) {
   }
 }
 
+
+// Structured, queryable operational logging. JSON on one line so the
+// dashboard indexes the fields and they can be filtered on.
+//
+// Deliberately counts and room codes only: never a title, URL, display name,
+// or chat message. The privacy policy this ships under says nothing is
+// tracked outside an active room, and the Web Store disclosure says the same;
+// logging what people actually watch would make both untrue. Everything here
+// answers "is the relay healthy and is anyone using it", which needs no
+// personal data at all.
+const ev = (evt, fields = {}) => {
+  try { console.log(JSON.stringify({ evt, at: Date.now(), ...fields })); } catch {}
+};
+
 export class SyncRelay extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);
@@ -311,7 +325,10 @@ ${sr
         };
       } else {
         sr = await this.getRoom(String(msg.code || "").toUpperCase().trim());
-        if (!sr) return ws.send(JSON.stringify({ type: "syncError", text: "No session with that code." }));
+        if (!sr) {
+          ev("join_missed", { code: String(msg.code || "").toUpperCase().trim().slice(0, 5) });
+          return ws.send(JSON.stringify({ type: "syncError", text: "No session with that code." }));
+        }
       }
       const memberId = sr.nextMemberId++;
       const me = {
@@ -331,6 +348,9 @@ ${sr
         content: sr.content, state: sr.state, meId: memberId,
         history: sr.history,
       }));
+      ev(msg.type === "syncCreate" ? "room_created" : "room_joined", {
+        code: sr.code, members: Object.keys(sr.membersMeta).length,
+      });
       sr.lastAction = { name: me.name, action: "joined", at: Date.now() };
       await this.said(sr, `${me.name} joined`);
       await this.syncBroadcast(sr);
@@ -604,6 +624,12 @@ ${sr
     const me = sr.membersMeta[att.memberId];
     if (!me) return;
     delete sr.membersMeta[att.memberId];
+    // wasClean separates "closed the tab" from "the connection died", which is
+    // the difference between normal churn and a bug worth chasing
+    ev("member_left", {
+      code: sr.code, wsCode: code, clean: !!wasClean,
+      remaining: Object.keys(sr.membersMeta).length,
+    });
     if (Object.keys(sr.membersMeta).length === 0) {
       return this.deleteRoom(sr.code);
     }

@@ -3,6 +3,14 @@
   "name": "sync-lis-relay",
   "main": "src/index.js",
   "compatibility_date": "2026-07-01",
+  // Indexed, queryable logs in the dashboard + `wrangler tail` for live.
+  // Without this a deployed Worker is a black box: the errors worth reading
+  // are the intermittent ones, and those only exist if something was already
+  // collecting when they happened.
+  "observability": {
+    "enabled": true,
+    "logs": { "invocation_logs": true, "head_sampling_rate": 1 }
+  },
   "durable_objects": {
     "bindings": [
       { "name": "SYNC_RELAY", "class_name": "SyncRelay" }
