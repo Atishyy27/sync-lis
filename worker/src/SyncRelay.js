@@ -83,6 +83,8 @@ function applyHolds(sr) {
 // logging what people actually watch would make both untrue. Everything here
 // answers "is the relay healthy and is anyone using it", which needs no
 // personal data at all.
+const STORE_URL = "https://chromewebstore.google.com/detail/hcpjipoofgpnenpfjddkkodbobehonlb";
+
 const ev = (evt, fields = {}) => {
   try { console.log(JSON.stringify({ evt, at: Date.now(), ...fields })); } catch {}
 };
@@ -149,26 +151,44 @@ export class SyncRelay extends DurableObject {
     const esc = (t) => String(t).replace(/[&<>"']/g, (c) =>
       ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
+    // Everyone who lands here without the extension is someone a friend
+    // personally invited: the highest-intent visitor this product will ever
+    // get. Sending them away with "install it and come back" wastes that, so
+    // the install button is the page's primary action and the code is kept
+    // visible for them to paste after installing. joinlink.js strips this the
+    // moment it runs, so anyone who DOES have it never sees an install nag.
     const body = `<!DOCTYPE html><html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>sync-lis room ${esc(code)}</title>
 <style>
   body{background:#141210;color:#ece7df;font-family:"Segoe UI",system-ui,sans-serif;
        min-height:100vh;display:flex;align-items:center;justify-content:center;margin:0}
-  .c{max-width:380px;padding:24px;text-align:center}
+  .c{max-width:400px;padding:24px;text-align:center}
   h1{font-size:34px;font-weight:750;letter-spacing:-1px;margin:0}
   h1::after{content:".";color:#ffb454}
   .code{font-size:40px;font-weight:750;letter-spacing:8px;color:#ffb454;margin:18px 0 6px}
   p{color:#9a9184;line-height:1.55;margin:10px 0}
   .now{color:#ece7df}
+  .cta{display:inline-block;margin:18px 0 8px;padding:11px 20px;border-radius:9px;
+       background:#ffb454;color:#161310;font-weight:650;text-decoration:none;font-size:15px}
+  .cta:hover{filter:brightness(1.06)}
+  .fine{font-size:12.5px;color:#6b6357}
+  #have{display:none}
 </style></head><body><div class="c">
 <h1>sync-lis</h1>
 <div class="code">${esc(code)}</div>
 ${sr
   ? `<p>Room is live${inside ? ` &middot; ${inside} inside` : ""}.</p>
-     ${sr.content ? `<p class="now">Playing: ${esc(sr.content.title || sr.content.url || "")}</p>` : ""}
-     <p>With sync-lis installed, this tab joins automatically and jumps to what's playing. Nothing happening? Open the extension and enter the code.</p>`
+     ${sr.content ? `<p class="now">Playing: ${esc(sr.content.title || sr.content.url || "")}</p>` : ""}`
   : `<p>That room isn't live right now.</p>`}
+<div id="need">
+  <a class="cta" href="${STORE_URL}" target="_blank" rel="noopener">Add sync-lis to Chrome</a>
+  <p class="fine">Free. Then reopen this link and you'll drop straight into
+  whatever they're watching, at their timestamp.</p>
+</div>
+<div id="have">
+  <p>Joining you now. If nothing happens, open sync-lis and enter the code above.</p>
+</div>
 </div></body></html>`;
     return new Response(body, { headers: { "Content-Type": "text/html; charset=utf-8" } });
   }
