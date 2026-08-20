@@ -15,6 +15,9 @@ const sw = (msg) => chrome.runtime.sendMessage({ target: "sync", ...msg }).catch
 function err(text) {
   $("err").textContent = text;
   $("err").classList.toggle("hidden", !text);
+  // the same line doubles as the copy confirmation, so drop that styling
+  // whenever it goes back to reporting a genuine problem
+  $("err").classList.remove("said");
 }
 
 function paintFaces() {
@@ -36,6 +39,22 @@ $("createBtn").addEventListener("click", async () => {
   err(null);
   const res = await sw({ type: "create", tabId, server: RELAY, name, avatar: myFace });
   if (!res || res.error) return err((res && res.error) || "could not start the room");
+  // The only thing anyone does after starting a room is send the link, so put
+  // it on the clipboard here rather than making them reopen the panel to find
+  // it. The popup stays up briefly so the copy is acknowledged, not silent.
+  if (res.code) {
+    let copied = false;
+    try {
+      await navigator.clipboard.writeText(`${RELAY}/r/${res.code}`);
+      copied = true;
+    } catch {}
+    if (copied) {
+      $("err").textContent = `room ${res.code} — invite link copied`;
+      $("err").classList.remove("hidden");
+      $("err").classList.add("said");
+      await new Promise((r) => setTimeout(r, 1100));
+    }
+  }
   window.close();
 });
 

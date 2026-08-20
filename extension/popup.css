@@ -34,6 +34,7 @@ body {
 
 .hint { color: var(--mute); font-size: 12px; line-height: 1.55; margin-bottom: 12px; }
 .err { color: var(--waiting); font-size: 11.5px; margin-top: 8px; }
+.err.said { color: var(--iris); }
 
 button, input {
   font: inherit; color: inherit; background: none; border: none;
