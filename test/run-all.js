@@ -19,6 +19,7 @@ const suites = [
   ["browser: live sites", "live-sites.js", []],
   ["browser: voice (simulated mic, two real peers)", "voice-e2e.js", []],
   ["browser: spacebar in chat must not leak to the page", "spacebar-leak.js", []],
+  ["browser: the film ducks while someone is talking", "voice-duck.js", []],
 ];
 
 // the jukebox suites need a tiny audio file; generate it once
