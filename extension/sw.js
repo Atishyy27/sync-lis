@@ -107,7 +107,7 @@ function startSession(tabId, server, name, joinMsg) {
     const s = {
       code: null, server, name, ws: null,
       state: null, content: null, offset: 0, members: [],
-      ports: new Set(), agentKey: null, navigatingTo: null, retries: 0,
+      ports: new Set(), agentKey: null, navigatingTo: null, retries: 0, beat: null,
     };
     const ws = new WebSocket(server.replace(/^http/, "ws"));
     s.ws = ws;
@@ -116,6 +116,13 @@ function startSession(tabId, server, name, joinMsg) {
 
     ws.onmessage = async (ev) => {
       const msg = JSON.parse(ev.data);
+      if (msg.type === "pong") {
+        // round-trip halved: the same estimate the join handshake makes, but
+        // refreshed, so a long session cannot drift on a stale offset
+        const rtt = Date.now() - msg.t;
+        s.offset = msg.now + rtt / 2 - Date.now();
+        return;
+      }
       if (msg.type === "syncJoined") {
         s.code = msg.code;
         s.offset = msg.now - Date.now();
@@ -130,6 +137,18 @@ function startSession(tabId, server, name, joinMsg) {
           try { prev.ws.close(); } catch {}
         }
         sessions.set(tabId, s);
+        // An MV3 service worker is killed after 30s of inactivity, and killing
+        // it takes this WebSocket -- and the whole session -- with it. Sending
+        // over the socket resets that idle timer (Chrome 116+), so a quiet
+        // room (paused video, nobody talking) is exactly the case that would
+        // otherwise die on its own. The server already answers {type:"ping"}
+        // with a live timestamp, so the same beat doubles as a clock-offset
+        // refresh instead of trusting the one taken at join.
+        clearInterval(s.beat);
+        s.beat = setInterval(() => {
+          if (s.ws.readyState !== 1) return;
+          try { s.ws.send(JSON.stringify({ type: "ping", t: Date.now() })); } catch {}
+        }, 20000);
         try {
           await injectAgent(tabId);
         } catch {
@@ -208,6 +227,8 @@ function startSession(tabId, server, name, joinMsg) {
     };
     ws.onerror = () => done({ error: `Couldn't reach ${server}.` });
     ws.onclose = () => {
+      clearInterval(s.beat);
+      s.beat = null;
       if (sessions.get(tabId) !== s) return;
       // a network blip is not the end of the session: rejoin the same code
       if (s.code && s.retries < 3) {
