@@ -65,7 +65,15 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   await page.fill("#nameInput", "Popup Tester");
   await page.click("#faces button");
   await page.click("#createBtn");
-  await sleep(500);
+  // Poll rather than sleep a fixed 500ms: the response travels popup ->
+  // service worker -> back, and on a loaded machine that lost the race and
+  // failed only in the full suite, never standalone. A flaky test is worse
+  // than no test, because it teaches you to ignore red.
+  for (let i = 0; i < 40; i++) {
+    const t = await page.locator("#err").textContent().catch(() => "");
+    if (t) break;
+    await sleep(150);
+  }
   const createMsg = await page.evaluate(() => window.__sentCalls.find((m) => m.type === "create"));
   check("clicking Create sends a create message with the chosen name and face",
     createMsg && createMsg.name === "Popup Tester" && !!createMsg.avatar,
