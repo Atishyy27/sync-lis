@@ -314,6 +314,10 @@ chrome.runtime.onMessage.addListener((msg) => {
   if (msg.type === "signal") {
     s.ws.send(JSON.stringify({ type: "syncSignal", to: msg.to, data: msg.data }));
   }
+  // speech detection lives in the offscreen document (that is where the peer
+  // audio is), but the thing to turn down is the page's player, so the verdict
+  // has to travel to the content script.
+  if (msg.type === "speaking") relayToPorts(s, { type: "duck", on: !!msg.on });
 });
 
 // ---------- popup API ----------

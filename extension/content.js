@@ -686,6 +686,8 @@
         if (ui) ui.did(msg.text);
       } else if (msg.type === "typing") {
         if (ui) ui.setTyping(msg.from);
+      } else if (msg.type === "duck") {
+        duckMedia(msg.on);
       } else if (msg.type === "voiceState") {
         if (ui) ui.setVoice(msg.on, msg.error);
       } else if (msg.type === "react") {
@@ -778,6 +780,42 @@
   }, 400);
 
   // stepped away from the tab: say so, rather than leaving silence unexplained
+  // ---------- duck the film while someone is talking ----------
+  //
+  // Everyone in the category makes you choose: hear the film, or hear your
+  // friend. Teleparty charges for voice and still does not solve this. Fading
+  // rather than cutting, because an instant volume drop reads as a glitch,
+  // and restoring to whatever the user had set rather than to 1.0, since they
+  // may well have been watching at half volume.
+  let duckFrom = null;
+  let duckTimer = null;
+  const DUCK_TO = 0.25;   // of their own level, not absolute
+  const DUCK_MS = 180;
+
+  function duckMedia(on) {
+    const v = adapter.el && adapter.el();
+    if (!v || typeof v.volume !== "number") return;
+    // capture the user's real level the first time, so repeated ducks do not
+    // ratchet the volume down toward zero
+    if (on && duckFrom === null) duckFrom = v.volume;
+    if (duckFrom === null) return;
+    const target = on ? duckFrom * DUCK_TO : duckFrom;
+    clearInterval(duckTimer);
+    const start = v.volume;
+    const t0 = Date.now();
+    duckTimer = setInterval(() => {
+      const k = Math.min(1, (Date.now() - t0) / DUCK_MS);
+      try { v.volume = start + (target - start) * k; } catch {}
+      if (k >= 1) {
+        clearInterval(duckTimer);
+        duckTimer = null;
+        // once restored, forget the captured level so a later change by the
+        // user is picked up instead of being overwritten by a stale one
+        if (!on) duckFrom = null;
+      }
+    }, 20);
+  }
+
   document.addEventListener("visibilitychange", () => {
     tell({ type: "away", away: document.hidden });
   });

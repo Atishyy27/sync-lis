@@ -34,6 +34,75 @@ async function ensureMic() {
   return mic;
 }
 
+// ---------- is anyone actually talking right now ----------
+//
+// Watching the incoming peer streams rather than our own mic: the point is to
+// duck the *video* when the other person speaks, and their voice is the thing
+// competing with it. Our own mic would duck the film every time you breathed
+// on it.
+//
+// One shared AudioContext, one analyser per peer. The analyser only reads the
+// stream; the audio you hear still comes from the <audio> element, so tapping
+// it here changes nothing about playback.
+let actx = null;
+const meters = new Map(); // peerId -> { src, analyser, buf }
+let speakingNow = false;
+let quietSince = 0;
+let meterTimer = null;
+
+const SPEAK_ON = 0.035;   // RMS above this counts as speech, not room tone
+const SPEAK_OFF = 0.018;  // fall below this to stop: hysteresis, so a pause
+                          // between words does not flap the video volume
+const HANG_MS = 700;      // and stay ducked this long after they stop
+
+function meterFor(peerId, stream) {
+  try {
+    actx = actx || new AudioContext();
+    if (actx.state === "suspended") actx.resume().catch(() => {});
+    const src = actx.createMediaStreamSource(stream);
+    const analyser = actx.createAnalyser();
+    analyser.fftSize = 512;
+    src.connect(analyser); // analyser is a sink here, never connected to output
+    meters.set(peerId, { src, analyser, buf: new Float32Array(analyser.fftSize) });
+    startMetering();
+  } catch {}
+}
+
+function rmsOf(m) {
+  m.analyser.getFloatTimeDomainData(m.buf);
+  let sum = 0;
+  for (let i = 0; i < m.buf.length; i++) sum += m.buf[i] * m.buf[i];
+  return Math.sqrt(sum / m.buf.length);
+}
+
+function startMetering() {
+  if (meterTimer) return;
+  meterTimer = setInterval(() => {
+    if (!meters.size) return;
+    let peak = 0;
+    for (const m of meters.values()) peak = Math.max(peak, rmsOf(m));
+    const now = Date.now();
+    if (peak >= SPEAK_ON) {
+      quietSince = 0;
+      if (!speakingNow) { speakingNow = true; toSw({ type: "speaking", on: true }); }
+    } else if (peak < SPEAK_OFF && speakingNow) {
+      if (!quietSince) quietSince = now;
+      if (now - quietSince >= HANG_MS) {
+        speakingNow = false;
+        quietSince = 0;
+        toSw({ type: "speaking", on: false });
+      }
+    }
+  }, 120);
+}
+
+function stopMetering(all) {
+  if (!all && meters.size) return;
+  clearInterval(meterTimer);
+  meterTimer = null;
+  if (speakingNow) { speakingNow = false; toSw({ type: "speaking", on: false }); }
+}
+
 function play(peerId, stream) {
   let el = players.get(peerId);
   if (!el) {
@@ -43,6 +112,7 @@ function play(peerId, stream) {
   }
   el.srcObject = stream;
   el.play().catch(() => {});
+  meterFor(peerId, stream);
 }
 
 function newPeer(peerId) {
@@ -68,6 +138,10 @@ function drop(peerId) {
     el.srcObject = null;
     players.delete(peerId);
   }
+  const m = meters.get(peerId);
+  if (m) { try { m.src.disconnect(); } catch {} meters.delete(peerId); }
+  // the last peer leaving must un-duck, or the video stays quiet forever
+  stopMetering(meters.size === 0);
 }
 
 async function callPeer(peerId) {
