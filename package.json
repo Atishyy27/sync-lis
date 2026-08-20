@@ -9,7 +9,8 @@
     "test": "node test/run-all.js",
     "test:e2e": "node test/e2e.js",
     "pack": "node tools/pack-extension.js",
-    "test:border": "node test/border-relay.js"
+    "test:border": "node test/border-relay.js",
+    "test:load": "node test/load-relay.js"
   },
   "dependencies": {
     "qrcode": "^1.5.4",
