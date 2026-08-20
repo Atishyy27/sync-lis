@@ -1,6 +1,6 @@
 {
   "name": "mehfil",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "mehfil: a self-hosted jam where a pasted link plays for everyone, in sync. Ships with sync-lis, a watch-together browser extension.",
   "main": "server.js",
   "scripts": {
