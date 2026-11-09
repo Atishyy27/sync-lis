@@ -32,6 +32,20 @@ async function joinTabOnce(tabId, origin, code) {
   }
 }
 
+// A room link opened BEFORE the extension was installed has no joinlink.js:
+// Chrome only injects manifest content scripts into pages loaded after
+// install. Inject it into those already-open tabs so the guest joins without
+// a manual reload. joinTabOnce ignores a repeat for the same room.
+chrome.runtime.onInstalled.addListener(async () => {
+  try {
+    const tabs = await chrome.tabs.query({ url: ["*://*/r/*"] });
+    for (const t of tabs) {
+      if (!/^https?:\/\/[^/]+\/r\/[A-Za-z0-9]{5}\/?$/.test(t.url || "")) continue;
+      chrome.scripting.executeScript({ target: { tabId: t.id }, files: ["joinlink.js"] }).catch(() => {});
+    }
+  } catch {}
+});
+
 const NETFLIX_RE = /^https?:\/\/([^/]*\.)?netflix\.com\//;
 const ROOM_LINK_RE = /^(https?:\/\/[^/]+)\/r\/([A-Z0-9]{5})\/?$/i;
 
