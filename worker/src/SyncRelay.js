@@ -156,7 +156,8 @@ export class SyncRelay extends DurableObject {
     // get. Sending them away with "install it and come back" wastes that, so
     // the install button is the page's primary action and the code is kept
     // visible for them to paste after installing. joinlink.js strips this the
-    // moment it runs, so anyone who DOES have it never sees an install nag.
+    // moment it runs, so anyone who DOES have it never sees an install nag. A dead room gets no
+    // install pitch above the fold: there is nothing to join yet.
     const body = `<!DOCTYPE html><html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>sync-lis room ${esc(code)}</title>
@@ -173,6 +174,10 @@ export class SyncRelay extends DurableObject {
        background:#ffb454;color:#161310;font-weight:650;text-decoration:none;font-size:15px}
   .cta:hover{filter:brightness(1.06)}
   .fine{font-size:12.5px;color:#6b6357}
+  .cta2{display:block;margin:10px auto 0;padding:9px 18px;border-radius:9px;border:1px solid #6b6357;
+        background:transparent;color:#ece7df;font:inherit;font-size:14px;cursor:pointer}
+  .cta2:hover{border-color:#ffb454}
+  .quiet{color:#9a9184}
   #have{display:none}
 </style></head><body><div class="c">
 <h1>sync-lis</h1>
@@ -181,14 +186,34 @@ ${sr
   ? `<p>Room is live${inside ? ` &middot; ${inside} inside` : ""}.</p>
      ${sr.content ? `<p class="now">Playing: ${esc(sr.content.title || sr.content.url || "")}</p>` : ""}`
   : `<p>That room isn't live right now.</p>`}
-<div id="need">
-  <a class="cta" href="${STORE_URL}" target="_blank" rel="noopener">Add sync-lis to Chrome</a>
-  <p class="fine">Free. Then reopen this link and you'll drop straight into
-  whatever they're watching, at their timestamp.</p>
+${sr ? `<div id="need">
+  <a class="cta" id="add" href="${STORE_URL}" target="_blank" rel="noopener">Add sync-lis to Chrome</a>
+  <p class="fine">Free. Come back to this tab after adding it, or press the
+  button below, and you'll drop straight into whatever they're watching.</p>
+  <button class="cta2" id="go" type="button">I installed it, continue</button>
 </div>
 <div id="have">
   <p>Joining you now. If nothing happens, open sync-lis and enter the code above.</p>
-</div>
+</div>` : `<div id="need">
+  <p class="fine">Ask your friend to start the room again and send a fresh link.
+  Don't have sync-lis yet?
+  <a class="quiet" href="${STORE_URL}" target="_blank" rel="noopener">Add it to Chrome</a>
+  so you're ready next time.</p>
+</div>`}
+<script>
+(function () {
+  var go = document.getElementById("go"), add = document.getElementById("add");
+  if (go) go.addEventListener("click", function () { location.reload(); });
+  // Chrome injects a freshly installed extension's content scripts only on
+  // page load, so an already-open tab needs one reload. After the guest hits
+  // the install button, reload once when they come back to this tab.
+  var pending = false;
+  if (add) add.addEventListener("click", function () { pending = true; });
+  document.addEventListener("visibilitychange", function () {
+    if (pending && document.visibilityState === "visible") { pending = false; location.reload(); }
+  });
+})();
+</script>
 </div></body></html>`;
     return new Response(body, { headers: { "Content-Type": "text/html; charset=utf-8" } });
   }
