@@ -99,72 +99,23 @@ break it and ours can't leak):
   someone keeps fumbling the seek bar. If the host leaves, host passes on and
   the lock is released, so a room can never end up stuck.
 
-### The public address
+### Install
 
-The relay is this machine, exposed by **Tailscale Funnel** — a permanent
-`https://<machine>.<tailnet>.ts.net` with a real, browser-trusted certificate.
-No domain, no account beyond Tailscale's free tier, no code to run alongside it:
+**[Get sync-lis on the Chrome Web Store](https://chromewebstore.google.com/detail/hcpjipoofgpnenpfjddkkodbobehonlb)** (Chrome, Brave, Edge and other Chromium browsers). Nothing to host, no account.
 
-```
-tailscale funnel --bg https+insecure://localhost:7777   # once, it persists
-tailscale funnel status                                  # check
-tailscale funnel --https=443 off                         # take it down
-```
+Only the person starting the room needs it first. A friend who opens the room link without the extension lands on a page that shows the room code and a one-click install, then joins the same room.
 
-`https+insecure` refers only to the hop from Funnel to our own self-signed
-server on localhost; the public side gets a genuine certificate, so nobody sees
-a warning. Two consequences worth knowing: the address is reachable by anyone on
-the internet (set the jam's access toggle to **Only with the link**), and your
-machine has to be on.
+### Where rooms live
 
-`npm run relay` remains as a fallback for when Tailscale isn't available — it
-opens a Cloudflare quick tunnel (no account, but a new URL every run) and
-rewrites the extension's constant for you.
+Rooms run on a small relay on **Cloudflare Workers + Durable Objects** (`worker/`), so they work around the clock and nobody's computer has to stay on. Only the shared clock and room events go through it, never your video, audio or screen. Idle rooms hibernate and cost nothing. The relay logs counts and room codes only, never content.
 
-### Running the fallback relay
+Self-hosting the relay instead (optional): `npm start` runs it inside the Node server, and `npm run relay` exposes it through a Cloudflare quick tunnel and writes that URL into `extension/popup.js` (a new URL every run, and your machine must stay on). `tailscale funnel 7777` gives a permanent address the same way.
 
-The room link points at a relay — your machine, exposed publicly by a Cloudflare
-quick tunnel (real TLS, no account, no port forwarding):
+**Why the mehfil jukebox is not hosted:** YouTube blocks *fetching* from datacenter IPs by reputation (the "Sign in to confirm you're not a bot" wall), so a cloud-hosted jukebox fails constantly while the same code on a home connection works. The jam stays on your machine; only sync-lis, which never touches media, runs in the cloud.
 
-```
-npm start      # the server (jam + sync rooms)
-npm run relay  # public link, baked into the extension automatically
-```
+### Developing the extension
 
-`npm run relay` prints the public URL, writes it into `extension/popup.js`, and
-tells you to reload the extension. **Keep that window open** — closing it kills
-the public link, and the next run mints a different URL.
-
-#### Getting a permanent free URL
-
-The quick tunnel is ephemeral by design. Free ways to stop that, in order of
-how well they fit:
-
-1. **Tailscale Funnel** — free personal plan, gives a permanent
-   `https://<machine>.<tailnet>.ts.net` with a real certificate, **no domain and
-   no code changes**. One command (`tailscale funnel 7777`) replaces the quick
-   tunnel. This is the right answer for mehfil, which has to run on your machine
-   anyway (see below). Trade: your machine must be on.
-2. **Cloudflare Tunnel, named** — permanent and free, but requires a domain you
-   own on Cloudflare.
-3. **Cloudflare Workers + Durable Objects** — free tier covers a relay this
-   small, and WebSocket Hibernation means idle rooms cost nothing. This is the
-   only option where sync-lis keeps working with your machine off. The relay is
-   already rewritten as a Durable Object (`worker/`, ported in `8365768`) and
-   passes locally under `wrangler dev` — it just isn't deployed yet, since that
-   needs an interactive `wrangler login` (OAuth) followed by `wrangler deploy`.
-
-**Why mehfil can't just be hosted somewhere:** YouTube blocks *fetching* from
-datacenter IPs by reputation — the "Sign in to confirm you're not a bot" wall —
-so a cloud-hosted jukebox fails constantly while the same code on your home
-connection works. The jam therefore stays on your machine and gets exposed; only
-sync-lis (which never touches media) is a candidate for cloud hosting.
-
-### Installing it (both people)
-
-`chrome://extensions` → Developer mode → **Load unpacked** → the `extension/`
-folder. To send it to someone: share `sync-lis.zip`, they unzip and load the
-folder the same way.
+`chrome://extensions` → Developer mode → **Load unpacked** → the `extension/` folder.
 
 ### How sync-lis works
 
