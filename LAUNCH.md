@@ -60,7 +60,7 @@ Post with the clip:
 
 > built a chrome extension so my friends and i can listen to spotify together from different cities, free accounts too, with voice. send a link, it plays the same second for everyone. works for youtube too. tell me what breaks
 
-(about 235 characters) Then reply to it with the store link, so the first post is not a bare link.
+(224 characters) Then reply to it with the store link, so the first post is not a bare link.
 
 ## 2. Batch and college WhatsApp groups (farewell season)
 
