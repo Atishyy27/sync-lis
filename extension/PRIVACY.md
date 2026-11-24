@@ -34,6 +34,18 @@ video/audio player) and a shared clock keeps everyone at the same timestamp.
   data collected, for any purpose unrelated to running the room you're
   actively in.
 
+## Feedback you choose to give
+
+- **Report link in the popup:** opens a GitHub issue form in a new tab, filled
+  in with the extension version, your browser, the site of the current tab
+  (the host name only, for example youtube.com) and whether you are in a room.
+  You see and can edit all of it, and nothing is sent unless you submit it on
+  GitHub yourself.
+- **When you remove the extension:** Chrome opens one page on the relay asking
+  why, with five buttons. Tapping one records only that reason code (for
+  example "friend") and the time. No name, URL or free text is recorded, and
+  you can close the page without answering.
+
 ## What it does not do
 
 - No tracking outside an active room.

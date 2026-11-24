@@ -83,3 +83,9 @@ input:focus { border-color: color-mix(in srgb, var(--iris) 55%, var(--rule)); ou
   font-family: var(--mono); font-size: 24px; letter-spacing: 4px;
   color: var(--iris); margin-bottom: 6px;
 }
+
+.foot {
+  display: block; padding: 8px 14px 12px; text-align: center;
+  font-size: 11px; color: var(--faint); text-decoration: none;
+}
+.foot:hover { color: var(--text); }

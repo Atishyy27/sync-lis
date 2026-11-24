@@ -3,6 +3,10 @@
 // the agent, follows the room's content by navigating the tab, and re-injects
 // after every navigation.
 
+// Removing the extension opens a one-tap "why?" page on the relay (worker/src/bye.js).
+// Logged as a reason code only. Same host as RELAY in popup.js.
+chrome.runtime.setUninstallURL("https://sync-lis-relay.sync-lis-relay.workers.dev/bye");
+
 const sessions = new Map(); // tabId -> session
 // A tab can be told to join by two paths (the room-link content script and
 // tabs.onUpdated). startSession only lands in `sessions` once the server

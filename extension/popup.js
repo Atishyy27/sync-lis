@@ -89,6 +89,28 @@ $("showBtn").addEventListener("click", async () => {
   window.close();
 });
 
+// Report link: opens a prefilled GitHub issue. Only what the person can see and edit
+// before sending: extension version, browser, the site of this tab (host only), and
+// whether they are in a room. Nothing is sent unless they submit it.
+$("reportLink").addEventListener("click", async (e) => {
+  e.preventDefault();
+  const [t] = await chrome.tabs.query({ active: true, currentWindow: true });
+  let site = "";
+  try { site = new URL(t.url).host; } catch {}
+  const inRoom = !$("here").classList.contains("hidden");
+  const ua = navigator.userAgentData ? navigator.userAgentData.brands.map((b) => `${b.brand} ${b.version}`).join(", ") : navigator.userAgent;
+  const body = `**What happened, or what would you change?**
+
+
+**Steps (if it is a problem)**
+1.
+
+---
+sync-lis ${chrome.runtime.getManifest().version} | ${ua} | site: ${site || "none"} | in a room: ${inRoom ? "yes" : "no"}`;
+  chrome.tabs.create({ url: "https://github.com/Atishyy27/sync-lis/issues/new?body=" + encodeURIComponent(body) });
+  window.close();
+});
+
 const RELAY = "https://sync-lis-relay.sync-lis-relay.workers.dev";
 
 (async () => {
