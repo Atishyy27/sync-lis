@@ -150,6 +150,15 @@ export class SyncRelay extends DurableObject {
     const inside = sr ? this.socketsInRoom(code).length : 0;
     const esc = (t) => String(t).replace(/[&<>"']/g, (c) =>
       ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    // Who invited them and what kind of room it is, so the page answers "what is
+    // this?" before asking for an install. Watching or listening comes from the
+    // room's current content; Spotify and Netflix need the visitor's own login.
+    const host = sr && sr.hostId && sr.membersMeta[sr.hostId] ? sr.membersMeta[sr.hostId].name : "";
+    let site = "";
+    try { site = sr && sr.content && sr.content.url ? new URL(sr.content.url).hostname.replace(/^www\./, "") : ""; } catch {}
+    const listening = /spotify\.com|soundcloud\.com|music\.youtube\.com/.test(site);
+    const ownLogin = /spotify\.com/.test(site) ? "Spotify" : /netflix\.com/.test(site) ? "Netflix" : "";
+    const verb = listening ? "listen" : "watch";
 
     // Everyone who lands here without the extension is someone a friend
     // personally invited: the highest-intent visitor this product will ever
@@ -172,19 +181,31 @@ export class SyncRelay extends DurableObject {
   .cta{display:inline-block;margin:18px 0 8px;padding:11px 20px;border-radius:9px;
        background:#ffb454;color:#161310;font-weight:650;text-decoration:none;font-size:15px}
   .cta:hover{filter:brightness(1.06)}
-  .fine{font-size:12.5px;color:#6b6357}
+  .fine{font-size:12.5px;color:#8f8679}
+  .steps{text-align:left;color:#c9c1b5;line-height:1.7;margin:16px auto;padding-left:22px;max-width:320px}
+  .join{background:none;border:1px solid #4a4339;color:#ece7df;border-radius:9px;padding:9px 16px;font-size:14px;cursor:pointer}
+  .join:hover{border-color:#ffb454}
   #have{display:none}
 </style></head><body><div class="c">
 <h1>sync-lis</h1>
-<div class="code">${esc(code)}</div>
 ${sr
-  ? `<p>Room is live${inside ? ` &middot; ${inside} inside` : ""}.</p>
-     ${sr.content ? `<p class="now">Playing: ${esc(sr.content.title || sr.content.url || "")}</p>` : ""}`
-  : `<p>That room isn't live right now.</p>`}
+  ? `<p class="now">${host ? `${esc(host)} invited you to ${verb} together` : `You're invited to ${verb} together`}, at the same second.</p>
+     ${sr.content ? `<p>${listening ? "Listening to" : "Playing"}: ${esc(sr.content.title || site || "")}</p>` : ""}
+     <div class="code">${esc(code)}</div>
+     <p>Room is live${inside ? ` &middot; ${inside} inside` : ""}.</p>`
+  : `<div class="code">${esc(code)}</div>
+     <p class="now">That room isn't live right now.</p>
+     <p>Ask whoever sent it for a fresh link.</p>`}
 <div id="need">
+  <ol class="steps">
+    <li>Add sync-lis to Chrome (free, desktop Chrome, Brave or Edge)</li>
+    <li>Come back to this tab and press Join</li>
+    <li>You land in the same room, at the same second</li>
+  </ol>
   <a class="cta" href="${STORE_URL}" target="_blank" rel="noopener">Add sync-lis to Chrome</a>
-  <p class="fine">Free. Then reopen this link and you'll drop straight into
-  whatever they're watching, at their timestamp.</p>
+  <p><button class="join" type="button" onclick="location.reload()">Installed? Join now</button></p>
+  ${ownLogin ? `<p class="fine">You need your own ${ownLogin} login; each of you plays it in your own browser.</p>` : ""}
+  <p class="fine">Watch YouTube or Netflix, or listen to Spotify, together. Only a shared clock goes between you, never your video, audio or screen.</p>
 </div>
 <div id="have">
   <p>Joining you now. If nothing happens, open sync-lis and enter the code above.</p>

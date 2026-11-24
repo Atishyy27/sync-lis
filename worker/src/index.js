@@ -7,7 +7,7 @@
 // shape. See extension/sw.js's startSession() for the client side.
 
 export { SyncRelay } from "./SyncRelay.js";
-import { byeResponse } from "./bye.js";
+import { byeResponse, feedbackResponse } from "./bye.js";
 
 const ev = (evt, fields = {}) => {
   try { console.log(JSON.stringify({ evt, at: Date.now(), ...fields })); } catch {}
@@ -26,6 +26,8 @@ export default {
     if (url.pathname.startsWith("/r/")) return stub.fetch(request);
     // /bye: one-tap uninstall reason, see bye.js. Needs no room state.
     if (url.pathname === "/bye") return byeResponse(url, ev);
+    // /feedback: one-tap, no-login feedback from the popup, see bye.js.
+    if (url.pathname === "/feedback") return feedbackResponse(url, ev);
     if (request.headers.get("Upgrade") !== "websocket") {
       return new Response("sync-lis relay: expects a WebSocket connection (or GET /stats)", { status: 426 });
     }

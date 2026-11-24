@@ -33,3 +33,31 @@ export function byeResponse(url, log) {
   return new Response(page(`<h1>sync-lis is removed</h1><p>One tap: why did you remove it?</p>${buttons}`),
     { headers: { "Content-Type": "text/html; charset=utf-8" } });
 }
+
+// /feedback: the popup's "Report a problem or suggest something" link. Same rules as /bye:
+// one tap, no login, logged as codes only (topic + extension version), never free text.
+// Read them in Workers Logs: evt = "feedback". Anyone who wants to write more gets the GitHub link.
+export const TOPICS = {
+  lostsync: "It lost sync",
+  join: "My friend couldn't join",
+  site: "A site didn't work",
+  voice: "Voice or chat didn't work",
+  idea: "I have an idea",
+  works: "It works great",
+};
+
+export function feedbackResponse(url, log) {
+  const t = url.searchParams.get("t");
+  const v = url.searchParams.get("v") || "";
+  const ver = /^\d+\.\d+\.\d+$/.test(v) ? v : "";
+  if (t && Object.hasOwn(TOPICS, t)) {
+    log("feedback", { topic: t, version: ver });
+    return new Response(page(`<h1>Got it, thank you</h1><p>Every tap is read.</p>
+<p>Want to describe it? <a class="s" href="https://github.com/Atishyy27/sync-lis/issues/new">Write it on GitHub</a> (needs a GitHub account).</p>`),
+      { headers: { "Content-Type": "text/html; charset=utf-8" } });
+  }
+  const q = ver ? `&v=${ver}` : "";
+  const buttons = Object.entries(TOPICS).map(([k, label]) => `<a class="b" href="/feedback?t=${k}${q}">${label}</a>`).join("");
+  return new Response(page(`<h1>How is sync-lis doing?</h1><p>One tap, no account.</p>${buttons}`),
+    { headers: { "Content-Type": "text/html; charset=utf-8" } });
+}
