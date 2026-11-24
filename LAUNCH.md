@@ -1,7 +1,34 @@
 # Launch drafts: sync-lis
 
 Nothing here has been posted. Every post is his, from his own accounts, by hand.
-Goal: the first 100 real weekly users (13 on 24 Nov 2026, store dashboard).
+Goal: the first 1,000 users, and their bug reports and UI notes (14 users on 24 Nov 2026, store page).
+Every number below was measured on 24 Nov 2026; nothing here is a forecast.
+
+## The market, measured
+
+| What | Number | Source |
+|---|---|---|
+| Watch-together extensions on Chrome | about 12,000,000 users: Teleparty 10,000,000, Scener 1,000,000, Watch2Gether 900,000, TwoSeven 100,000 | store pages |
+| Their ratings | Teleparty 4.0, Watch2Gether 3.5, TwoSeven 3.3, Scener 3.0 | store pages |
+| Listen-together extensions | about 46 users in total: DaGrooveCync 18, Syncer 14, sync-lis 14 | store pages |
+| Spotify | 788M monthly users, 499M of them free; free users cannot join a Jam remotely | Spotify Q3 2026 filing; Spotify Jam help |
+| Discord | 200M+ monthly users; its Spotify Listen Along cannot be used during voice chat | Discord; Spotify help |
+| Reviews per user at the incumbents | Teleparty 0.18%, Scener 0.037%, Watch2Gether 0.015% | store pages |
+
+The last row is why feedback comes from the report link in the popup and the uninstall page, not store reviews: at those rates 1,000 users leave 0 to 2 reviews.
+
+## The tracks
+
+- **A. YouTube watch-together switchers.** Proven demand (12M installs) with weakly rated incumbents below Teleparty.
+- **B. Free Spotify listeners who want to listen together.** 499M free accounts locked out of remote Jam; extension competitors here hold about 46 users. Demand is not measured yet: the posts measure it.
+- **C. Listening plus voice.** Discord's own Listen Along blocks voice chat; sync-lis has voice built in.
+- **D. His own network.** The only channel with a measured result: X DMs on 20 Nov brought 6 site visitors.
+
+## What each channel did for similar products (measured)
+
+- **Show HN:** title searches for watch or listen together, watch party and Spotify sync found 3-12 launches each, median 1-6 points. Outliers had a novelty angle (YouTube in a 3D world, 212 points; synced YouTube fitness, 143).
+- **Product Hunt:** 2024-2026 listen-together launches got 0-20 upvotes and 2-26 followers. Older ones (2016-2020) got 104-313 upvotes.
+- **Reddit audience sizes:** r/youtube 3,485,686; r/india 3,506,228; r/spotify 3,044,856; r/LongDistance 2,496,512; r/netflix 1,978,553; r/discordapp 1,550,224; r/SideProject 912,925; r/musicsuggestions 449,111; r/chrome_extensions 54,753. Size is reach, not installs; each post's result is read on the store dashboard.
 
 Store: https://chromewebstore.google.com/detail/hcpjipoofgpnenpfjddkkodbobehonlb
 
@@ -19,7 +46,7 @@ Two browser windows side by side, labelled "me" and "friend". Start a room, past
 
 ## The one-line pitch
 
-Watch or listen together from anywhere: whatever one person plays, the other's browser plays at the same second. No screen share, so no quality loss. Free, no account.
+Listen to Spotify in sync with friends, free, with voice. And watch YouTube together, at the same second. No screen share, so no quality loss. No account.
 
 ## The disclosure, said up front
 
@@ -31,9 +58,9 @@ Only a shared clock and room events go through the relay (a Cloudflare Worker). 
 
 Post with the clip:
 
-> built a chrome extension so my friends and i can watch together from different cities. send a link, their tab jumps to the same second, pause and seek move both. youtube, netflix, spotify web. no screen share, free, no account
+> built a chrome extension so my friends and i can listen to spotify together from different cities, free accounts too, with voice. send a link, it plays the same second for everyone. works for youtube too. tell me what breaks
 
-(about 230 characters) Then reply to it with the store link, so the first post is not a bare link.
+(about 235 characters) Then reply to it with the store link, so the first post is not a bare link.
 
 ## 2. Batch and college WhatsApp groups (farewell season)
 
@@ -80,6 +107,10 @@ F5Bot (f5bot.com) emails you when Reddit or Hacker News mention: "watch together
 - **Does Netflix work if it is DRM'd?** Yes, because nothing is streamed: each browser plays Netflix itself, and both people need their own account.
 - **My friend does not have it.** The room link opens a page with the room code and a one-click install, then joins the same room.
 
+## Every post ends the same way
+
+Ask for what breaks, and point at the report link in the popup. The goal of the first 1,000 is the reports, not the count.
+
 ## Measure
 
-After every post: weekly users and installs on the store dashboard, plus rooms per day in the relay's Workers Logs. One line per post in cnc Projects/REVIEWS.md, so the channel that worked is known.
+After every post: weekly users and installs on the store dashboard, plus the relay's hourly snapshot (cnc Projects/synclis-relay-stats.csv) and uninstall reasons (evt "uninstall_reason" in Workers Logs). One line per post in cnc Projects/REVIEWS.md, so the channel that worked is known.
