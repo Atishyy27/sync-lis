@@ -10,6 +10,14 @@
   <section id="door" class="pad">
     <div class="mark">sync&#8209;<b>lis</b></div>
     <p class="hint">Open what you want to watch or listen to in this tab, then start a room. The panel appears on the page once you're in.</p>
+    <div id="openFirst" class="hidden">
+      <p class="hint">This tab can't play together. Open one of these here first:</p>
+      <div class="row go3">
+        <button class="chip" data-go="https://www.youtube.com/">YouTube</button>
+        <button class="chip" data-go="https://open.spotify.com/">Spotify</button>
+        <button class="chip" data-go="https://www.netflix.com/">Netflix</button>
+      </div>
+    </div>
     <input id="nameInput" type="text" maxlength="24" placeholder="your name" autocomplete="off" />
     <div id="faces" class="faces"></div>
     <button id="createBtn" class="go">Start a room</button>
@@ -19,6 +27,7 @@
       <button id="joinBtn" class="chip">Join</button>
     </div>
     <p id="err" class="err hidden"></p>
+    <input id="linkBox" class="hidden" readonly />
   </section>
 
   <!-- already in a room on this tab -->
@@ -26,7 +35,9 @@
     <div class="mark">sync&#8209;<b>lis</b></div>
     <div class="incode" id="roomCode">·····</div>
     <p id="memberLine" class="hint"></p>
-    <button id="showBtn" class="go">Show the panel</button>
+    <button id="copyBtn" class="go">Copy invite link</button>
+    <p id="copyNote" class="err said hidden"></p>
+    <button id="showBtn" class="chip wide">Show the panel</button>
     <button id="leaveBtn" class="chip warn">Leave room</button>
   </section>
 

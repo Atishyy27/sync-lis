@@ -158,7 +158,7 @@ function startSession(tabId, server, name, joinMsg) {
         } catch {
           ws.close();
           sessions.delete(tabId);
-          return done({ error: "Can't control this page (browser-internal or protected tab)." });
+          return done({ error: "This tab can't play together. Open YouTube, Spotify or Netflix here first." });
         }
         if (s.content) followContent(tabId, s);
         done({ code: s.code });

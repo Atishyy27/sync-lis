@@ -36,11 +36,11 @@ video/audio player) and a shared clock keeps everyone at the same timestamp.
 
 ## Feedback you choose to give
 
-- **Report link in the popup:** opens a GitHub issue form in a new tab, filled
-  in with the extension version, your browser, the site of the current tab
-  (the host name only, for example youtube.com) and whether you are in a room.
-  You see and can edit all of it, and nothing is sent unless you submit it on
-  GitHub yourself.
+- **Report link in the popup:** opens a one-tap page on the relay with six
+  topics (for example "My friend couldn't join"). Tapping one records only that
+  topic, the extension version and the time. No name, URL or free text is
+  recorded, and no account is needed. If you want to write details, that page
+  links to GitHub, where you choose what to post.
 - **When you remove the extension:** Chrome opens one page on the relay asking
   why, with five buttons. Tapping one records only that reason code (for
   example "friend") and the time. No name, URL or free text is recorded, and

@@ -347,7 +347,7 @@ button:focus-visible, .jamrow input:focus-visible, .dmini input:focus-visible, .
         </div>
         <div class="pbody">
           <div class="race-wrap">
-            <div class="eyebrow">together?</div>
+            <div class="eyebrow">drift between you</div>
             <div class="stateline" id="slState">connecting…</div>
             <div class="race" id="slRace"></div>
             <div class="race-labels"><span>behind</span><span>ahead</span></div>
@@ -355,7 +355,7 @@ button:focus-visible, .jamrow input:focus-visible, .dmini input:focus-visible, .
           </div>
           <div class="people" id="slPeople"></div>
           <div class="handy">
-            <button id="slReady">Ready</button>
+            <button id="slReady" title="Everyone presses Ready, then a 3-2-1 starts playback for all at the same moment">Ready</button>
             <button id="slVoice">Voice</button>
             <button id="slMute" class="hidden2">Mute</button>
           </div>
@@ -655,6 +655,7 @@ button:focus-visible, .jamrow input:focus-visible, .dmini input:focus-visible, .
           : `waiting for <em>${esc(notReady.map((m) => m.name).join(" and "))}</em>`;
       } else if (!content) line = members.length < 2 ? "open something and press play" : "nobody has started anything";
       else if (state.paused) line = "paused";
+      else if (members.length < 2) line = "just you here: <em>send the invite link</em>";
       else line = "<em>in sync</em>";
       el("slState").innerHTML = line;
 
@@ -720,6 +721,16 @@ button:focus-visible, .jamrow input:focus-visible, .dmini input:focus-visible, .
       if (document.activeElement !== linkBox) linkBox.value = `${room.server || ""}/r/${room.code}`;
       const nameBox = this.sheet.querySelector("#slMeName");
       if (me && document.activeElement !== nameBox) nameBox.value = me.name || "";
+      // FEEDBACK-02 A1: everyone who joined from a link showed up as "friend". Once per
+      // room, open the sheet on the name box so they can say who they are.
+      if (me && me.name === "friend" && this.askedName !== room.code) {
+        this.askedName = room.code;
+        this.setExpanded(true);
+        this.openSheet();
+        nameBox.value = "";
+        nameBox.placeholder = "your name, so they know it's you";
+        nameBox.focus();
+      }
       if (me && !this.myFace && me.avatar) { this.myFace = me.avatar; this.paintFaces(); }
     },
 

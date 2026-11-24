@@ -53,6 +53,8 @@ $("createBtn").addEventListener("click", async () => {
       $("err").classList.remove("hidden");
       $("err").classList.add("said");
       await new Promise((r) => setTimeout(r, 1100));
+    } else {
+      return showLink(`${RELAY}/r/${res.code}`);
     }
   }
   window.close();
@@ -89,33 +91,56 @@ $("showBtn").addEventListener("click", async () => {
   window.close();
 });
 
-// Report link: opens a prefilled GitHub issue. Only what the person can see and edit
-// before sending: extension version, browser, the site of this tab (host only), and
-// whether they are in a room. Nothing is sent unless they submit it.
-$("reportLink").addEventListener("click", async (e) => {
+// Report link: a one-tap page on the relay, no account needed (worker/src/bye.js,
+// /feedback). Only the topic tapped and this version are recorded.
+$("reportLink").addEventListener("click", (e) => {
   e.preventDefault();
-  const [t] = await chrome.tabs.query({ active: true, currentWindow: true });
-  let site = "";
-  try { site = new URL(t.url).host; } catch {}
-  const inRoom = !$("here").classList.contains("hidden");
-  const ua = navigator.userAgentData ? navigator.userAgentData.brands.map((b) => `${b.brand} ${b.version}`).join(", ") : navigator.userAgent;
-  const body = `**What happened, or what would you change?**
-
-
-**Steps (if it is a problem)**
-1.
-
----
-sync-lis ${chrome.runtime.getManifest().version} | ${ua} | site: ${site || "none"} | in a room: ${inRoom ? "yes" : "no"}`;
-  chrome.tabs.create({ url: "https://github.com/Atishyy27/sync-lis/issues/new?body=" + encodeURIComponent(body) });
+  chrome.tabs.create({ url: `${RELAY}/feedback?v=${chrome.runtime.getManifest().version}` });
   window.close();
 });
+
+// Copy failed (some pages block the clipboard): show the link to copy by hand and keep
+// the popup open, instead of closing with nothing to send.
+function showLink(link) {
+  $("linkBox").value = link;
+  $("linkBox").classList.remove("hidden");
+  $("linkBox").select();
+  err("copy this link and send it");
+}
+
+$("copyBtn").addEventListener("click", async () => {
+  const st = await sw({ type: "status", tabId });
+  if (!st || !st.code) return;
+  const link = `${st.server || RELAY}/r/${st.code}`;
+  try {
+    await navigator.clipboard.writeText(link);
+    $("copyNote").textContent = "invite link copied";
+    $("copyNote").classList.remove("hidden");
+  } catch {
+    $("copyNote").textContent = link;
+    $("copyNote").classList.remove("hidden");
+  }
+});
+
+document.querySelectorAll("[data-go]").forEach((b) => {
+  b.addEventListener("click", async () => {
+    if (tabId != null) await chrome.tabs.update(tabId, { url: b.dataset.go });
+    window.close();
+  });
+});
+
+// Tabs the extension can never script (browser pages, the Web Store, new tabs).
+const PROTECTED = /^(chrome|edge|brave|about|chrome-extension|view-source|devtools):|^https:\/\/(chromewebstore\.google\.com|chrome\.google\.com\/webstore)/;
 
 const RELAY = "https://sync-lis-relay.sync-lis-relay.workers.dev";
 
 (async () => {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   tabId = tab && tab.id;
+  if (tab && (!tab.url || PROTECTED.test(tab.url))) {
+    $("openFirst").classList.remove("hidden");
+    $("createBtn").disabled = true;
+  }
   const cfg = await chrome.storage.local.get({ name: "", avatar: "" });
   $("nameInput").value = cfg.name;
   myFace = cfg.avatar || "";
