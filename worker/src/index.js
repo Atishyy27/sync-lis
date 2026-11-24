@@ -7,6 +7,11 @@
 // shape. See extension/sw.js's startSession() for the client side.
 
 export { SyncRelay } from "./SyncRelay.js";
+import { byeResponse } from "./bye.js";
+
+const ev = (evt, fields = {}) => {
+  try { console.log(JSON.stringify({ evt, at: Date.now(), ...fields })); } catch {}
+};
 
 export default {
   async fetch(request, env) {
@@ -19,6 +24,8 @@ export default {
     // /r/<code>: the page a share link opens. Same singleton DO, so the page
     // reports the room's real state rather than a guess.
     if (url.pathname.startsWith("/r/")) return stub.fetch(request);
+    // /bye: one-tap uninstall reason, see bye.js. Needs no room state.
+    if (url.pathname === "/bye") return byeResponse(url, ev);
     if (request.headers.get("Upgrade") !== "websocket") {
       return new Response("sync-lis relay: expects a WebSocket connection (or GET /stats)", { status: 426 });
     }
