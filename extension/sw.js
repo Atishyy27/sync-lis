@@ -36,8 +36,26 @@ async function joinTabOnce(tabId, origin, code) {
   }
 }
 
+// A room link opened BEFORE the extension was installed has no joinlink.js:
+// Chrome only injects manifest content scripts into pages loaded after
+// install. Inject it into those already-open tabs so the guest joins without
+// a manual reload. joinTabOnce ignores a repeat for the same room.
+chrome.runtime.onInstalled.addListener(async () => {
+  try {
+    const tabs = await chrome.tabs.query({ url: ["*://*/r/*"] });
+    for (const t of tabs) {
+      if (!/^https?:\/\/[^/]+\/r\/[A-Za-z0-9]{5}\/?$/.test(t.url || "")) continue;
+      chrome.scripting.executeScript({ target: { tabId: t.id }, files: ["joinlink.js"] }).catch(() => {});
+    }
+  } catch {}
+});
+
 const NETFLIX_RE = /^https?:\/\/([^/]*\.)?netflix\.com\//;
 const ROOM_LINK_RE = /^(https?:\/\/[^/]+)\/r\/([A-Z0-9]{5})\/?$/i;
+// Only the default relay's URLs are trusted from the address bar alone: any site
+// can have a /r/<5 characters> page (reddit.com/r/funny). A self-hosted relay's
+// invite page is recognised by joinlink.js from the page itself instead.
+const DEFAULT_RELAY = "https://sync-lis-relay.sync-lis-relay.workers.dev";
 
 function pushToPorts(s) {
   const msg = {
@@ -106,7 +124,52 @@ async function followContent(tabId, s) {
   }
 }
 
-function startSession(tabId, server, name, joinMsg) {
+// After a dropped connection, wait and rejoin the same room, backing off, for
+// about two minutes in all. The first wait is short because most blips are; the
+// later ones cover a wifi switch or a laptop waking up. It stops at once when
+// the relay says the room is gone, the person leaves, or the tab closes.
+const REJOIN_WAITS_MS = [1500, 3000, 5000, 8000, 12000, 20000, 30000, 30000];
+const CONNECT_TIMEOUT_MS = 10000;
+
+function rejoinLater(tabId, s, server, name) {
+  relayToPorts(s, { type: "note", text: "Connection lost, reconnecting..." });
+  let attempt = 0;
+  const left = () => sessions.get(tabId) !== s || s.retries >= 99;
+  // The 20 s ping is gone with the socket, and a pending timer does not count
+  // as activity: Chrome stops an idle service worker after 30 s, taking this
+  // session with it. Calling an extension API resets that timer.
+  const keepAwake = setInterval(() => { try { chrome.runtime.getPlatformInfo(); } catch {} }, 20000);
+  const stop = () => clearInterval(keepAwake);
+  const tryOnce = async () => {
+    if (left()) return stop();
+    const again = await startSession(tabId, server, name, { type: "syncJoin", code: s.code, name }, () => !left());
+    const s2 = sessions.get(tabId);
+    if (!again.error && s2 && s2 !== s) {
+      stop();
+      s2.ports = s.ports;   // the agent's port outlives the socket
+      s2.agentKey = s.agentKey;
+      relayToPorts(s2, { type: "note", text: "Back in the room" });
+      pushToPorts(s2);
+      return;
+    }
+    if (again.error === "left") return stop();
+    // the join worked but the agent could not be injected: startSession dropped
+    // the new session, so nothing else would tell the panel
+    if (sessions.get(tabId) !== s) { stop(); endPorts(s); return; }
+    if (again.gone || attempt >= REJOIN_WAITS_MS.length) {
+      stop();
+      sessions.delete(tabId);
+      endPorts(s);
+      return;
+    }
+    setTimeout(tryOnce, REJOIN_WAITS_MS[attempt++]);
+  };
+  setTimeout(tryOnce, REJOIN_WAITS_MS[attempt++]);
+}
+
+// `stillWanted`, when given, is asked just before the session is registered: a
+// rejoin that finishes after the person left must not bring the room back.
+function startSession(tabId, server, name, joinMsg, stillWanted) {
   return new Promise((resolve) => {
     const s = {
       code: null, server, name, ws: null,
@@ -116,7 +179,13 @@ function startSession(tabId, server, name, joinMsg) {
     const ws = new WebSocket(server.replace(/^http/, "ws"));
     s.ws = ws;
     let settled = false;
-    const done = (v) => { if (!settled) { settled = true; resolve(v); } };
+    // a relay that accepts the connection and never answers would otherwise
+    // hold the join (and every retry behind it) for as long as the browser waits
+    const timer = setTimeout(() => {
+      done({ error: `Couldn't reach ${server}.` });
+      try { ws.close(); } catch {}
+    }, CONNECT_TIMEOUT_MS);
+    const done = (v) => { if (!settled) { settled = true; clearTimeout(timer); resolve(v); } };
 
     ws.onmessage = async (ev) => {
       const msg = JSON.parse(ev.data);
@@ -128,6 +197,11 @@ function startSession(tabId, server, name, joinMsg) {
         return;
       }
       if (msg.type === "syncJoined") {
+        clearTimeout(timer);   // connected; injecting the agent may take its own time
+        if (stillWanted && !stillWanted()) {
+          ws.close();
+          return done({ error: "left" });
+        }
         s.code = msg.code;
         s.offset = msg.now - Date.now();
         s.content = msg.content || null;
@@ -225,7 +299,8 @@ function startSession(tabId, server, name, joinMsg) {
       } else if (msg.type === "syncNote") {
         relayToPorts(s, { type: "note", text: msg.text });
       } else if (msg.type === "syncError") {
-        done({ error: msg.text });
+        // "gone" tells a retry that the room itself no longer exists
+        done({ error: msg.text, gone: true });
         ws.close();
       }
     };
@@ -234,24 +309,8 @@ function startSession(tabId, server, name, joinMsg) {
       clearInterval(s.beat);
       s.beat = null;
       if (sessions.get(tabId) !== s) return;
-      // a network blip is not the end of the session: rejoin the same code
-      if (s.code && s.retries < 3) {
-        s.retries++;
-        setTimeout(async () => {
-          if (sessions.get(tabId) !== s) return;
-          const again = await startSession(tabId, server, name, { type: "syncJoin", code: s.code, name });
-          const s2 = sessions.get(tabId);
-          if (again.error || !s2) {
-            sessions.delete(tabId);
-            endPorts(s);
-          } else {
-            s2.ports = s.ports;   // the agent's port outlives the socket
-            s2.agentKey = s.agentKey;
-            pushToPorts(s2);
-          }
-        }, 1500 * s.retries);
-        return;
-      }
+      // a network blip is not the end of the session: keep trying to rejoin the same code
+      if (s.code && s.retries < 99) { rejoinLater(tabId, s, server, name); return; }
       sessions.delete(tabId);
       endPorts(s);
     };
@@ -404,7 +463,17 @@ chrome.runtime.onConnect.addListener((port) => {
     // checking a dead socket — the agent would still receive state while
     // every command it sent vanished.
     const s = sessions.get(tabId);
-    if (!s || s.ws.readyState !== 1) return;
+    if (!s) return;
+    // leaving has to work while the socket is down, or a person who is
+    // reconnecting could not get out of the room
+    if (m.type === "leave") {
+      sessions.delete(tabId);
+      s.retries = 99;
+      try { s.ws.close(); } catch {}
+      endPorts(s);
+      return;
+    }
+    if (s.ws.readyState !== 1) return;
     if (RELAY[m.type]) {
       s.ws.send(JSON.stringify(RELAY[m.type](m)));
     } else if (m.type === "cmd") {
@@ -421,12 +490,6 @@ chrome.runtime.onConnect.addListener((port) => {
       s.ws.send(JSON.stringify({
         type: "syncContent", key: m.key, url: m.url, title: m.title, kind: m.kind, time: m.time,
       }));
-    } else if (m.type === "leave") {
-      // the on-page panel can leave the room directly, same as the popup does
-      sessions.delete(tabId);
-      s.retries = 99;
-      try { s.ws.close(); } catch {}
-      endPorts(s);
     }
   });
   port.onDisconnect.addListener(() => {
@@ -443,7 +506,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, info, tab) => {
 
   // clicking a room link joins that room in that tab — the link carries the relay
   const m = ROOM_LINK_RE.exec(tab.url);
-  if (m) {
+  if (m && m[1] === DEFAULT_RELAY) {
     await joinTabOnce(tabId, m[1], m[2].toUpperCase());
     return;
   }
