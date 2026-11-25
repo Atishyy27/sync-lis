@@ -10,3 +10,4 @@
 17:43Z go: cherry-picked changes 1 and 2 from wip, change 3 = his e19d5ba (install join) + link-match fix; unit 31/31 (roomlink red on old code 5 of 11)
 18:01Z 8 ci: workflow review-e2e.yml (push review/** only), test/ci browser scripts written; first push next
 18:08Z 8 ci run 1 green: unit 31/31, browser 17/17, shots downloaded (8 files under 60 KB). Adding a must-fail-on-master step, review doc cards
+18:21Z 7 review round 1: 2 findings (service worker idle limit during retry, failed injection leaves panel) fixed in 98d1544, unit 33/33
