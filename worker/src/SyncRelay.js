@@ -22,6 +22,11 @@ import { DurableObject } from "cloudflare:workers";
 
 const ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const ARRIVAL_GRACE_MS = 20000;
+// How long a room nobody is in is kept before it is deleted. A host alone in a
+// room is the normal state while a friend installs the extension, and a wifi
+// blip empties the room for a moment: deleting it at once turned both into
+// "That room isn't live right now". Cleared by the alarm() handler below.
+const EMPTY_ROOM_TTL_MS = 10 * 60 * 1000;
 
 // A pasted link, named as well as we can without fetching anything. The real
 // title arrives later, from whoever's player actually lands on it.
@@ -168,6 +173,7 @@ export class SyncRelay extends DurableObject {
     // moment it runs, so anyone who DOES have it never sees an install nag.
     const body = `<!DOCTYPE html><html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="sync-lis-room" content="${esc(code)}">
 <title>sync-lis room ${esc(code)}</title>
 <style>
   body{background:#141210;color:#ece7df;font-family:"Segoe UI",system-ui,sans-serif;
@@ -192,7 +198,7 @@ ${sr
   ? `<p class="now">${host ? `${esc(host)} invited you to ${verb} together` : `You're invited to ${verb} together`}, at the same second.</p>
      ${sr.content ? `<p>${listening ? "Listening to" : "Playing"}: ${esc(sr.content.title || site || "")}</p>` : ""}
      <div class="code">${esc(code)}</div>
-     <p>Room is live${inside ? ` &middot; ${inside} inside` : ""}.</p>`
+     <p>${inside ? `Room is live &middot; ${inside} inside` : sr.emptyAt ? "Room is open, nobody inside right now" : "Room is live"}.</p>`
   : `<div class="code">${esc(code)}</div>
      <p class="now">That room isn't live right now.</p>
      <p>Ask whoever sent it for a fresh link.</p>`}
@@ -235,6 +241,51 @@ ${sr
     this.graceTimers.delete(code);
     this.coalesce.delete(code);
     await this.ctx.storage.delete(`room:${code}`);
+  }
+
+  // Nobody is in the room: keep it for EMPTY_ROOM_TTL_MS so a rejoin or a late
+  // invitee still finds it. Playback is frozen where it was (a "playing" state
+  // would otherwise keep counting), and nobody is host until someone returns.
+  async holdEmptyRoom(sr) {
+    clearTimeout(this.graceTimers.get(sr.code));
+    clearTimeout(this.coalesce.get(sr.code));
+    this.graceTimers.delete(sr.code);
+    this.coalesce.delete(sr.code);
+    const now = Date.now();
+    sr.state = { paused: true, time: transportTime(sr), at: now, rate: sr.state.rate || 1 };
+    sr.heldPlaying = false;
+    sr.hostId = null;
+    sr.locked = false;
+    sr.countdownAt = null;
+    sr.emptyAt = now;
+    await this.saveRoom(sr);
+    ev("room_held", { code: sr.code });
+    // one alarm serves every held room; only move it earlier, never later
+    const due = now + EMPTY_ROOM_TTL_MS;
+    const cur = await this.ctx.storage.getAlarm();
+    if (cur == null || cur > due) await this.ctx.storage.setAlarm(due);
+  }
+
+  // Deletes held rooms whose time is up and re-arms for the next one.
+  async alarm() {
+    const now = Date.now();
+    let next = null;
+    const rooms = await this.ctx.storage.list({ prefix: "room:" });
+    for (const [, sr] of rooms) {
+      if (!sr.emptyAt) continue;
+      const due = sr.emptyAt + EMPTY_ROOM_TTL_MS;
+      if (due <= now) {
+        // someone may have come back since the room was read
+        const cur = await this.getRoom(sr.code);
+        if (cur && cur.emptyAt && Object.keys(cur.membersMeta).length === 0) {
+          ev("room_expired", { code: sr.code });
+          await this.deleteRoom(sr.code);
+        }
+      } else if (next == null || due < next) {
+        next = due;
+      }
+    }
+    if (next != null) await this.ctx.storage.setAlarm(next);
   }
 
   async makeCode() {
@@ -371,6 +422,7 @@ ${sr
           return ws.send(JSON.stringify({ type: "syncError", text: "No session with that code." }));
         }
       }
+      delete sr.emptyAt;
       const memberId = sr.nextMemberId++;
       const me = {
         id: memberId,
@@ -672,7 +724,7 @@ ${sr
       remaining: Object.keys(sr.membersMeta).length,
     });
     if (Object.keys(sr.membersMeta).length === 0) {
-      return this.deleteRoom(sr.code);
+      return this.holdEmptyRoom(sr);
     }
     // host left: pass it on, and never leave the room stuck locked
     if (sr.hostId === att.memberId) {
