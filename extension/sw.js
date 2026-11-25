@@ -52,6 +52,10 @@ chrome.runtime.onInstalled.addListener(async () => {
 
 const NETFLIX_RE = /^https?:\/\/([^/]*\.)?netflix\.com\//;
 const ROOM_LINK_RE = /^(https?:\/\/[^/]+)\/r\/([A-Z0-9]{5})\/?$/i;
+// Only the default relay's URLs are trusted from the address bar alone: any site
+// can have a /r/<5 characters> page (reddit.com/r/funny). A self-hosted relay's
+// invite page is recognised by joinlink.js from the page itself instead.
+const DEFAULT_RELAY = "https://sync-lis-relay.sync-lis-relay.workers.dev";
 
 function pushToPorts(s) {
   const msg = {
@@ -492,7 +496,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, info, tab) => {
 
   // clicking a room link joins that room in that tab — the link carries the relay
   const m = ROOM_LINK_RE.exec(tab.url);
-  if (m) {
+  if (m && m[1] === DEFAULT_RELAY) {
     await joinTabOnce(tabId, m[1], m[2].toUpperCase());
     return;
   }
