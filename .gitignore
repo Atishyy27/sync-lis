@@ -20,3 +20,7 @@ dist/
 
 # meant to stay local (session handoff notes) — was accidentally tracked
 SESSION-CONTEXT.local.md
+
+# ci screenshot output (committed copies live in docs/review-2026-11-25/shots)
+/shots/
+test/ci/out/

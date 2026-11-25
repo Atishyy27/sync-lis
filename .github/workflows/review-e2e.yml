@@ -1,0 +1,58 @@
+# Checks for the review/** branches only: light unit tests, then the extension
+# in real Chromium against the mock relay (no network, no Cloudflare), then
+# before/after screenshots. It never deploys and never publishes: the release
+# workflow is the only one that does, and it runs on v* tags, not here.
+name: review-e2e
+
+on:
+  push:
+    branches: ["review/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run test:unit
+
+  browser:
+    runs-on: ubuntu-latest
+    needs: unit
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # the "before" screenshots read master's files
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+
+      - name: Browser end to end
+        run: node test/ci/e2e.mjs
+
+      - name: Screenshots, before (master) and after (this branch)
+        if: always()
+        run: |
+          mkdir -p "$RUNNER_TEMP/before"
+          git archive origin/master extension worker/src | tar -x -C "$RUNNER_TEMP/before"
+          export SHOTS_DIR="$GITHUB_WORKSPACE/shots"
+          EXT_DIR="$RUNNER_TEMP/before/extension" SYNCLIS_WORKER_DIR="$RUNNER_TEMP/before/worker/src" node test/ci/shots.mjs before
+          node test/ci/shots.mjs after
+          ls -l shots
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: review-shots
+          path: shots/
+          if-no-files-found: warn

@@ -8,7 +8,10 @@ import path from "node:path";
 register("./hooks.mjs", import.meta.url);
 
 const ROOT = path.join(import.meta.dirname, "..", "..");
-const workerUrl = (f) => pathToFileURL(path.join(ROOT, "worker", "src", f)).href;
+// SYNCLIS_WORKER_DIR points at another copy of worker/src (the CI "before" screenshots
+// run the relay as it was on master); the path must still contain worker/src.
+const WORKER_DIR = process.env.SYNCLIS_WORKER_DIR || path.join(ROOT, "worker", "src");
+const workerUrl = (f) => pathToFileURL(path.join(WORKER_DIR, f)).href;
 
 export class FakeStorage {
   constructor() { this.map = new Map(); this.alarm = null; }
