@@ -38,6 +38,7 @@ export async function startMockRelay({ port = 0 } = {}) {
   server.on("upgrade", async (req, socket, head) => {
     ctl.upgrades++;
     if (ctl.upgradeDelayMs) await sleep(ctl.upgradeDelayMs);
+    if (socket.destroyed) return;   // the client gave up while we were slow
     if (ctl.refusing) {
       ctl.refused++;
       socket.write("HTTP/1.1 503 Service Unavailable\r\nConnection: close\r\n\r\n");
