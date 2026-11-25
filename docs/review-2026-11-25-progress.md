@@ -11,3 +11,4 @@
 18:01Z 8 ci: workflow review-e2e.yml (push review/** only), test/ci browser scripts written; first push next
 18:08Z 8 ci run 1 green: unit 31/31, browser 17/17, shots downloaded (8 files under 60 KB). Adding a must-fail-on-master step, review doc cards
 18:21Z 7 review round 1: 2 findings (service worker idle limit during retry, failed injection leaves panel) fixed in 98d1544, unit 33/33
+18:25Z 7 review round 2: nothing above a nit. ci run 45674326026 green (unit 33/33, browser 17/17, master 9/17). Done pending final docs push
