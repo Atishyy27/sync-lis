@@ -37,14 +37,28 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
 
-      - name: Browser end to end
+      - name: Browser end to end, this branch
         run: node test/ci/e2e.mjs
+
+      - name: Copy master's extension and relay code for the before side
+        if: always()
+        run: |
+          mkdir -p "$RUNNER_TEMP/before" shots
+          git archive origin/master extension worker/src | tar -x -C "$RUNNER_TEMP/before"
+
+      # A browser test that passes on the old code checks nothing. This run
+      # points the same test at master and must fail.
+      - name: The same run on master must fail
+        if: always()
+        run: |
+          if EXT_DIR="$RUNNER_TEMP/before/extension" SYNCLIS_WORKER_DIR="$RUNNER_TEMP/before/worker/src" node test/ci/e2e.mjs > shots/e2e-on-master.log 2>&1; then
+            echo "the browser run passed on master, so it proves nothing"; cat shots/e2e-on-master.log; exit 1
+          fi
+          grep -E "^(PASS|FAIL)|checks passed" shots/e2e-on-master.log
 
       - name: Screenshots, before (master) and after (this branch)
         if: always()
         run: |
-          mkdir -p "$RUNNER_TEMP/before"
-          git archive origin/master extension worker/src | tar -x -C "$RUNNER_TEMP/before"
           export SHOTS_DIR="$GITHUB_WORKSPACE/shots"
           EXT_DIR="$RUNNER_TEMP/before/extension" SYNCLIS_WORKER_DIR="$RUNNER_TEMP/before/worker/src" node test/ci/shots.mjs before
           node test/ci/shots.mjs after
