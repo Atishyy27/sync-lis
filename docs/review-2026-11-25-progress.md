@@ -5,3 +5,4 @@
 10:26Z 2 study: arch handout at masti/cnc/work/arch/synclis.md
 10:26Z 3 product pass: 7 findings, 5 references (aws backoff page came back empty, noted)
 10:26Z 4 plan: docs/review-2026-11-25.md written, top 3 = empty-room hold, reconnect ladder, room-link gate + install join
+10:34Z gate: coordinator asked to stop after the plan. Code for changes 1 and 2 was already written; moved to local branch wip/build-2026-11-25 (not pushed), this branch holds only the plan doc and this log
