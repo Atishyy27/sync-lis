@@ -29,7 +29,9 @@ video/audio player) and a shared clock keeps everyone at the same timestamp.
   is never recorded or stored anywhere.
 - Chat history and room state live only in the relay server's memory for as
   long as the room is open; nothing is written to disk unless whoever runs
-  that server chooses to add that themselves.
+  that server chooses to add that themselves. When the last person leaves, the
+  relay keeps the room for up to 10 minutes, so a dropped connection or a late
+  friend can still get in, and then deletes it.
 - No analytics, no ad networks, no data broker, no sale or sharing of any
   data collected, for any purpose unrelated to running the room you're
   actively in.
