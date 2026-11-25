@@ -136,3 +136,26 @@ test("QA: joining a code the relay does not know says so", async (t) => {
   const res = await fake.send({ target: "sync", type: "join", tabId: 8, server: relay.url, name: "x", code: "ZZZZZ", avatar: "" });
   assert.equal(res.error, "No session with that code.");
 });
+
+test("while reconnecting it keeps the service worker awake, and stops once back", async (t) => {
+  const { relay, fake, sw, code } = await start(t);
+  const first = sw.sessions().get(TAB);
+  relay.ctl.refusing = true;
+  relay.dropAll();
+  const n0 = fake.calls.platformInfo;
+  await sleep(1000);                   // 50 s of real time at this scale: two 20 s beats
+  assert.ok(fake.calls.platformInfo - n0 >= 2, `an extension API was called, got ${fake.calls.platformInfo - n0}`);
+  relay.ctl.refusing = false;
+  await waitFor(() => { const s = sw.sessions().get(TAB); return s && s !== first && s.ws.readyState === 1; }, 4000);
+  const n1 = fake.calls.platformInfo;
+  await sleep(500);
+  assert.equal(fake.calls.platformInfo, n1, "no more calls once it is back");
+});
+
+test("a rejoin whose agent cannot be injected tells the panel the room ended", async (t) => {
+  const { relay, fake, agent } = await start(t);
+  fake.flags.failInject = true;
+  relay.dropAll();
+  const ended = await waitFor(() => agent.got.some((m) => m.type === "ended"), 3000);
+  assert.ok(ended, "the panel is not left saying reconnecting");
+});

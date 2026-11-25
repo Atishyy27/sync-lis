@@ -13,13 +13,15 @@ const listener = () => {
 };
 
 export function makeChrome({ tabs = {}, name = "tester" } = {}) {
-  const calls = { executeScript: [], tabsUpdate: [], created: [] };
+  const calls = { executeScript: [], tabsUpdate: [], created: [], platformInfo: 0 };
+  const flags = { failInject: false };
   const ev = { onMessage: listener(), onConnect: listener(), onUpdated: listener(), onRemoved: listener(), onInstalled: listener() };
   let queryResult = [];
   const chrome = {
     runtime: {
       setUninstallURL() {},
       getURL: (p) => `chrome-extension://test/${p}`,
+      getPlatformInfo: () => { calls.platformInfo++; return Promise.resolve({}); },
       sendMessage: () => Promise.resolve(null),
       onMessage: ev.onMessage, onConnect: ev.onConnect, onInstalled: ev.onInstalled,
     },
@@ -30,7 +32,7 @@ export function makeChrome({ tabs = {}, name = "tester" } = {}) {
       create: async (p) => { calls.created.push(p); },
       query: async () => queryResult,
     },
-    scripting: { executeScript: async (a) => { calls.executeScript.push(a); } },
+    scripting: { executeScript: async (a) => { if (flags.failInject) throw new Error("cannot script this tab"); calls.executeScript.push(a); } },
     storage: { local: { get: async (d) => ({ ...d, name }), set: async () => {} } },
     offscreen: { hasDocument: async () => true, createDocument: async () => {} },
   };
@@ -55,7 +57,7 @@ export function makeChrome({ tabs = {}, name = "tester" } = {}) {
   };
 
   return {
-    chrome, calls, send, connectAgent,
+    chrome, calls, flags, send, connectAgent,
     setQuery: (r) => { queryResult = r; },
     fireUpdated: (tabId, url) => Promise.all(ev.onUpdated.list.map((l) => l(tabId, { status: "complete" }, { id: tabId, url }))),
     fireInstalled: (reason) => Promise.all(ev.onInstalled.list.map((l) => l({ reason }))),

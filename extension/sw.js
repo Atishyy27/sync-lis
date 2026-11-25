@@ -135,19 +135,29 @@ function rejoinLater(tabId, s, server, name) {
   relayToPorts(s, { type: "note", text: "Connection lost, reconnecting..." });
   let attempt = 0;
   const left = () => sessions.get(tabId) !== s || s.retries >= 99;
+  // The 20 s ping is gone with the socket, and a pending timer does not count
+  // as activity: Chrome stops an idle service worker after 30 s, taking this
+  // session with it. Calling an extension API resets that timer.
+  const keepAwake = setInterval(() => { try { chrome.runtime.getPlatformInfo(); } catch {} }, 20000);
+  const stop = () => clearInterval(keepAwake);
   const tryOnce = async () => {
-    if (left()) return;
+    if (left()) return stop();
     const again = await startSession(tabId, server, name, { type: "syncJoin", code: s.code, name }, () => !left());
     const s2 = sessions.get(tabId);
     if (!again.error && s2 && s2 !== s) {
+      stop();
       s2.ports = s.ports;   // the agent's port outlives the socket
       s2.agentKey = s.agentKey;
       relayToPorts(s2, { type: "note", text: "Back in the room" });
       pushToPorts(s2);
       return;
     }
-    if (left()) return;
+    if (again.error === "left") return stop();
+    // the join worked but the agent could not be injected: startSession dropped
+    // the new session, so nothing else would tell the panel
+    if (sessions.get(tabId) !== s) { stop(); endPorts(s); return; }
     if (again.gone || attempt >= REJOIN_WAITS_MS.length) {
+      stop();
       sessions.delete(tabId);
       endPorts(s);
       return;
