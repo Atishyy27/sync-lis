@@ -298,6 +298,7 @@ function serveRoomLink(req, res, code) {
   const room = syncRooms.get(code);
   const body = `<!DOCTYPE html><html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="sync-lis-room" content="${code}">
 <title>sync-lis room ${code}</title>
 <style>
   body{background:#141210;color:#ece7df;font-family:"Segoe UI",system-ui,sans-serif;
