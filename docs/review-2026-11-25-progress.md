@@ -6,3 +6,6 @@
 10:26Z 3 product pass: 7 findings, 5 references (aws backoff page came back empty, noted)
 10:26Z 4 plan: docs/review-2026-11-25.md written, top 3 = empty-room hold, reconnect ladder, room-link gate + install join
 10:34Z gate: coordinator asked to stop after the plan. Code for changes 1 and 2 was already written; moved to local branch wip/build-2026-11-25 (not pushed), this branch holds only the plan doc and this log
+10:36Z gate: pushed review/2026-11-25 with plan doc + log only (release.yml triggers on v* tags only, so no workflow ran)
+17:43Z go: cherry-picked changes 1 and 2 from wip, change 3 = his e19d5ba (install join) + link-match fix; unit 31/31 (roomlink red on old code 5 of 11)
+18:01Z 8 ci: workflow review-e2e.yml (push review/** only), test/ci browser scripts written; first push next
